@@ -2,21 +2,23 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Artikelbestand ändern</title>
+  <title>Barcode-Anpassung</title>
 </head>
 <body>
-  <h1>Artikel: {{ artikel.name }}</h1>
-  <p>Aktueller Bestand: {{ artikel.bestand }}</p>
+  <h1>🔄 Bestand über Barcode ändern</h1>
+  <h3>{{ artikel.name }} (aktuell: {{ artikel.bestand }})</h3>
   <form method="post">
-    <label>Menge:</label><br>
-    <input type="number" name="menge" required><br><br>
-    <label>Aktion:</label><br>
-    <select name="aktion">
-      <option value="hinzufügen">Hinzufügen</option>
-      <option value="entnehmen">Entnehmen</option>
-    </select><br><br>
-    <button type="submit">Bestand anpassen</button>
+    <label>Menge:<br>
+      <input type="number" name="menge" required>
+    </label><br><br>
+    <label>Aktion:<br>
+      <select name="aktion">
+        <option value="hinzufügen">➕ Hinzufügen</option>
+        <option value="entnehmen">➖ Entnehmen</option>
+      </select>
+    </label><br><br>
+    <button type="submit">💾 Speichern</button>
+    <a href="{{ url_for('index') }}">❌ Abbrechen</a>
   </form>
-  <br><a href="/">Zurück</a>
 </body>
 </html>

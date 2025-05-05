@@ -2,16 +2,17 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Artikel bearbeiten</title>
+  <title>Bestand anpassen</title>
 </head>
 <body>
-  <h1>Artikel bearbeiten</h1>
-  <p>{{ artikel.name }} (aktuell: {{ artikel.bestand }} Stück)</p>
+  <h1>📦 Bestand anpassen</h1>
+  <h3>{{ artikel.name }} (aktuell: {{ artikel.bestand }})</h3>
   <form method="post">
-    <label>Bestandsänderung:</label><br>
-    <input type="number" name="delta" value="0"><br><br>
-    <button type="submit">Bestand ändern</button>
+    <label>Menge hinzufügen oder entnehmen (z. B. +1 oder -2):<br>
+      <input type="number" name="delta" required>
+    </label><br><br>
+    <button type="submit">💾 Speichern</button>
+    <a href="{{ url_for('index') }}">❌ Abbrechen</a>
   </form>
-  <br><a href="/">Zurück zur Übersicht</a>
 </body>
 </html>
