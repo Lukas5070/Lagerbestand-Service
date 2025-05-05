@@ -32,18 +32,15 @@
       padding: 4mm 2mm;
       text-align: center;
       overflow: hidden;
-      border: 0.1px dashed transparent; /* zum Testen auch grey möglich */
     }
     .etikett img {
       height: 18mm;
       max-width: 100%;
       margin: 4mm 0 2mm;
     }
-
     @media print {
       .noprint { display: none; }
     }
-
     .noprint {
       margin: 10px;
     }
@@ -53,7 +50,7 @@
   <div class="noprint">
     <a href="/" style="padding:6px 12px; background:#007BFF; color:#fff; text-decoration:none; border-radius:5px;">⬅ Zurück</a>
     <button onclick="window.print()" style="padding:6px 12px; background:#28a745; color:#fff; border:none; border-radius:5px;">🖨️ Drucken</button>
-    <p style="margin-top:10px;">Hinweis: Papierformat A4 · 100 % · Ränder: Keine · Hintergrundgrafiken: Aktiviert</p>
+    <p style="margin-top:10px;">Druckeinstellungen: A4, 100 %, Ränder: Keine, Hintergrundgrafiken: ✅</p>
   </div>
 
   <div class="etikettenblatt">
