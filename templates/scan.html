@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Barcode scannen</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+  <h1>Barcode mit Kamera scannen</h1>
+  <div id="reader" style="width:300px;"></div>
+  <p id="result"></p>
+  <script>
+    function onScanSuccess(decodedText, decodedResult) {
+      document.getElementById("result").innerText = "Gefunden: " + decodedText;
+      window.location.href = "/adjust_barcode/" + decodedText;
+    }
+
+    const html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      onScanSuccess
+    ).catch(err => {
+      document.getElementById("result").innerText = "Fehler: " + err;
+    });
+  </script>
+  <br><a href="/">Zurück</a>
+</body>
+</html>

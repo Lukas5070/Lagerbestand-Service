@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Artikelbestand ändern</title>
+</head>
+<body>
+  <h1>Artikel: {{ artikel.name }}</h1>
+  <p>Aktueller Bestand: {{ artikel.bestand }}</p>
+  <form method="post">
+    <label>Menge:</label><br>
+    <input type="number" name="menge" required><br><br>
+    <label>Aktion:</label><br>
+    <select name="aktion">
+      <option value="hinzufügen">Hinzufügen</option>
+      <option value="entnehmen">Entnehmen</option>
+    </select><br><br>
+    <button type="submit">Bestand anpassen</button>
+  </form>
+  <br><a href="/">Zurück</a>
+</body>
+</html>

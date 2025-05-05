@@ -48,7 +48,7 @@ def add():
 @app.route('/update/<int:id>', methods=['GET', 'POST'])
 def update(id):
     artikel = Artikel.query.get_or_404(id)
-    if request.method == 'POST':
+    if request.method == ' 'POST':
         try:
             delta = int(request.form['delta'])
             artikel.bestand += delta
@@ -64,6 +64,26 @@ def delete(id):
     db.session.delete(artikel)
     db.session.commit()
     return redirect(url_for('index'))
+
+@app.route('/scan')
+def scan():
+    return render_template('scan.html')
+
+@app.route('/adjust_barcode/<barcode_id>', methods=['GET', 'POST'])
+def adjust_barcode(barcode_id):
+    artikel = Artikel.query.filter(Artikel.barcode_filename == f"{barcode_id}.png").first()
+    if not artikel:
+        return "Artikel nicht gefunden", 404
+    if request.method == 'POST':
+        menge = int(request.form['menge'])
+        aktion = request.form['aktion']
+        if aktion == 'hinzufügen':
+            artikel.bestand += menge
+        elif aktion == 'entnehmen':
+            artikel.bestand -= menge
+        db.session.commit()
+        return redirect(url_for('index'))
+    return render_template('adjust.html', artikel=artikel)
 
 if __name__ == '__main__':
     os.makedirs('static/barcodes', exist_ok=True)
