@@ -19,7 +19,7 @@
     .seite {
       height: 297mm;
       width: 210mm;
-      padding: 15mm 7mm;
+      padding: 16.5mm 7mm; /* ⇦ Wichtig: leicht tiefer starten */
       box-sizing: border-box;
       display: grid;
       grid-template-columns: repeat(2, 99.1mm);
@@ -36,9 +36,9 @@
     }
 
     .etikett img {
-      height: 32mm; /* groß für Handy-Scan */
+      height: 32mm;
       max-width: 100%;
-      margin: 3mm 0 1mm;
+      margin: 2mm 0 1mm;
     }
 
     @media print {
@@ -54,7 +54,7 @@
   <div class="noprint">
     <a href="/" style="padding:6px 12px; background:#007BFF; color:#fff; text-decoration:none; border-radius:5px;">⬅ Zurück</a>
     <button onclick="window.print()" style="padding:6px 12px; background:#28a745; color:#fff; border:none; border-radius:5px;">🖨️ Drucken</button>
-    <p style="margin-top:10px;">Druckeinstellungen: A4 · 100 % · Keine Ränder · Hintergrundgrafiken: ✅</p>
+    <p style="margin-top:10px;">Druckeinstellungen: A4 · 100 % · Keine Ränder · Hintergrundgrafiken ✅</p>
   </div>
 
   {% for i in range(0, artikel|length, 12) %}
