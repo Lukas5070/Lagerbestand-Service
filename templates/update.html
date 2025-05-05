@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Artikel bearbeiten</title>
+</head>
+<body>
+  <h1>Artikel bearbeiten</h1>
+  <p>{{ artikel.name }} (aktuell: {{ artikel.bestand }} Stück)</p>
+  <form method="post">
+    <label>Bestandsänderung:</label><br>
+    <input type="number" name="delta" value="0"><br><br>
+    <button type="submit">Bestand ändern</button>
+  </form>
+  <br><a href="/">Zurück zur Übersicht</a>
+</body>
+</html>
