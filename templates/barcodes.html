@@ -2,42 +2,60 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Etikettendruck – Avery L4743</title>
+  <title>Etiketten – Avery L4743REV</title>
   <style>
-    @media print {
-      body { margin: 0; }
-      .etikettenblatt { page-break-after: always; }
+    @page {
+      size: A4;
+      margin: 0;
     }
-    body {
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 297mm;
+      width: 210mm;
       font-family: Arial, sans-serif;
-      margin: 15mm 5mm;
-      font-size: 11px;
+      font-size: 12px;
+      overflow: hidden;
     }
     .etikettenblatt {
       display: grid;
-      grid-template-columns: repeat(3, 70mm);
-      grid-template-rows: repeat(8, 35mm);
-      gap: 0;
+      grid-template-columns: repeat(2, 99.1mm);
+      grid-template-rows: repeat(6, 42.3mm);
+      padding: 15mm 7mm;
+      gap: 0mm 2.5mm;
       width: 210mm;
       height: 297mm;
+      box-sizing: border-box;
     }
     .etikett {
       box-sizing: border-box;
-      padding: 5mm 2mm;
+      padding: 4mm 2mm;
       text-align: center;
       overflow: hidden;
-      border: 0.2px dashed #ddd;
+      border: 0.1px dashed transparent; /* zum Testen auch grey möglich */
     }
     .etikett img {
-      height: 15mm;
+      height: 18mm;
       max-width: 100%;
-      margin: 3mm 0;
+      margin: 4mm 0 2mm;
+    }
+
+    @media print {
+      .noprint { display: none; }
+    }
+
+    .noprint {
+      margin: 10px;
     }
   </style>
 </head>
 <body>
-  <h1>Etiketten – Avery L4743</h1>
-  <p>STRG+P → Ziel: PDF oder Etikettendrucker | Papierformat: A4 | 100 %</p>
+  <div class="noprint">
+    <a href="/" style="padding:6px 12px; background:#007BFF; color:#fff; text-decoration:none; border-radius:5px;">⬅ Zurück</a>
+    <button onclick="window.print()" style="padding:6px 12px; background:#28a745; color:#fff; border:none; border-radius:5px;">🖨️ Drucken</button>
+    <p style="margin-top:10px;">Hinweis: Papierformat A4 · 100 % · Ränder: Keine · Hintergrundgrafiken: Aktiviert</p>
+  </div>
+
   <div class="etikettenblatt">
     {% for art in artikel %}
     <div class="etikett">
