@@ -28,12 +28,10 @@ def add():
         name = request.form['name']
         bestand = int(request.form['bestand'])
         mindestbestand = int(request.form['mindestbestand'])
-
         barcode_id = str(uuid.uuid4())[:8]
         barcode_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{barcode_id}.png")
         ean = barcode.get('code128', barcode_id, writer=ImageWriter())
         ean.save(barcode_path[:-4])
-
         artikel = Artikel(
             name=name,
             bestand=bestand,
@@ -84,6 +82,11 @@ def adjust_barcode(barcode_id):
         db.session.commit()
         return redirect(url_for('index'))
     return render_template('adjust.html', artikel=artikel)
+
+@app.route('/barcodes')
+def barcodes():
+    artikel = Artikel.query.all()
+    return render_template('barcodes.html', artikel=artikel)
 
 if __name__ == '__main__':
     os.makedirs('static/barcodes', exist_ok=True)

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Alle Barcodes</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .barcode-block {
+      display: inline-block;
+      width: 200px;
+      text-align: center;
+      margin: 10px;
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+    img { max-width: 100%; height: auto; }
+    @media print {
+      body { padding: 0; }
+      .barcode-block { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Alle Barcodes</h1>
+  {% for art in artikel %}
+  <div class="barcode-block">
+    <strong>{{ art.name }}</strong><br>
+    <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}"><br>
+    <small>{{ art.barcode_filename[:-4] }}</small>
+  </div>
+  {% endfor %}
+  <br><br>
+  <button onclick="window.print()">🖨️ Drucken</button> |
+  <a href="/">Zurück zur Übersicht</a>
+</body>
+</html>
