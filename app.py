@@ -7,7 +7,7 @@ from barcode.writer import ImageWriter
 
 app = Flask(__name__)
 
-# ✅ Verbindet mit PostgreSQL, wenn DATABASE_URL in Render gesetzt ist
+# ✅ Nur eine Zeile – nutzt Render-Datenbank oder SQLite lokal
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///lager.db")
 
 # Barcode-Bildpfad
@@ -102,10 +102,10 @@ def barcodes():
     artikel = Artikel.query.all()
     return render_template('barcodes.html', artikel=artikel)
 
-# Hauptstart der App
+# App-Start
 if __name__ == '__main__':
     os.makedirs('static/barcodes', exist_ok=True)
     with app.app_context():
-        db.create_all()  # Erstellt Tabellen beim ersten Start
+        db.create_all()
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
