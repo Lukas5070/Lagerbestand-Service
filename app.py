@@ -48,7 +48,7 @@ def add():
 @app.route('/update/<int:id>', methods=['GET', 'POST'])
 def update(id):
     artikel = Artikel.query.get_or_404(id)
-    if request.method == ' 'POST':
+    if request.method == 'POST':
         try:
             delta = int(request.form['delta'])
             artikel.bestand += delta
