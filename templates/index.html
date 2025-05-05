@@ -4,21 +4,18 @@
   <meta charset="UTF-8">
   <title>Lagerübersicht</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
+    body { font-family: Arial; padding: 20px; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
     .low-stock { background-color: #fdd; }
-    a { text-decoration: none; color: #007bff; }
-    a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
-  <h1>Lagerbestand</h1>
+  <h1>Lagerübersicht 📦</h1>
   <p>
     <a href="/add">➕ Artikel hinzufügen</a> |
-    <a href="/scan">📷 Barcode mit Kamera scannen</a>
+    <a href="/scan">📷 Kamera-Scan</a>
   </p>
-
   <table>
     <tr>
       <th>Name</th>
@@ -32,14 +29,11 @@
       <td>{{ art.name }}</td>
       <td>{{ art.bestand }}</td>
       <td>{{ art.mindestbestand }}</td>
+      <td><img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" height="50"><br>{{ art.barcode_filename[:-4] }}</td>
       <td>
-        <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" height="50">
-        <div style="font-size: 0.8em;">{{ art.barcode_filename[:-4] }}</div>
-      </td>
-      <td>
-        <a href="/update/{{ art.id }}">✏️ Bearbeiten</a><br>
-        <form action="/delete/{{ art.id }}" method="post" style="margin-top: 5px;">
-          <button type="submit" onclick="return confirm('Wirklich löschen?')">🗑️ Löschen</button>
+        <a href="/update/{{ art.id }}">✏️</a>
+        <form action="/delete/{{ art.id }}" method="post" style="display:inline;">
+          <button type="submit">🗑️</button>
         </form>
       </td>
     </tr>
