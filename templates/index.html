@@ -8,25 +8,40 @@
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
     .low-stock { background-color: #fdd; }
+    a { text-decoration: none; color: #007bff; }
+    a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <h1>Lagerbestand</h1>
-  <a href="/add">+ Artikel hinzufügen</a> |
-  <a href="/scan">📷 Barcode scannen</a>
+  <p>
+    <a href="/add">➕ Artikel hinzufügen</a> |
+    <a href="/scan">📷 Barcode mit Kamera scannen</a>
+  </p>
+
   <table>
     <tr>
       <th>Name</th>
       <th>Bestand</th>
       <th>Mindestbestand</th>
       <th>Barcode</th>
+      <th>Aktion</th>
     </tr>
     {% for art in artikel %}
     <tr class="{{ 'low-stock' if art.bestand < art.mindestbestand else '' }}">
       <td>{{ art.name }}</td>
       <td>{{ art.bestand }}</td>
       <td>{{ art.mindestbestand }}</td>
-      <td><img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" height="50"></td>
+      <td>
+        <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" height="50">
+        <div style="font-size: 0.8em;">{{ art.barcode_filename[:-4] }}</div>
+      </td>
+      <td>
+        <a href="/update/{{ art.id }}">✏️ Bearbeiten</a><br>
+        <form action="/delete/{{ art.id }}" method="post" style="margin-top: 5px;">
+          <button type="submit" onclick="return confirm('Wirklich löschen?')">🗑️ Löschen</button>
+        </form>
+      </td>
     </tr>
     {% endfor %}
   </table>
