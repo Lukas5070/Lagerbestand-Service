@@ -2,24 +2,30 @@ from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 import os
 import uuid
-import barcode
-from barcode.writer import ImageWriter
+import qrcode  # ✅ QR-Code statt Code128
 
 app = Flask(__name__)
 
-# PostgreSQL (Render) oder lokal SQLite
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///lager.db")
 app.config['UPLOAD_FOLDER'] = 'static/barcodes'
 db = SQLAlchemy(app)
 
-# Barcode automatisch neu erzeugen bei fehlender Datei
+# ✅ Neue QR-Code-Funktion
 def ensure_barcode_image(barcode_id):
     path = os.path.join(app.config['UPLOAD_FOLDER'], f"{barcode_id}.png")
     if not os.path.exists(path):
-        ean = barcode.get('code128', barcode_id, writer=ImageWriter())
-        ean.save(path[:-4])
+        qr = qrcode.QRCode(
+            version=2,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            box_size=6,
+            border=2
+        )
+        qr.add_data(barcode_id)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        img.save(path)
 
-# DB-Modell
+# Artikel-Modell
 class Artikel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -43,15 +49,14 @@ def add():
         mindestbestand = int(request.form['mindestbestand'])
 
         barcode_id = str(uuid.uuid4())[:8]
-        barcode_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{barcode_id}.png")
-        ean = barcode.get('code128', barcode_id, writer=ImageWriter())
-        ean.save(barcode_path[:-4])
+        barcode_filename = f"{barcode_id}.png"
+        ensure_barcode_image(barcode_id)
 
         artikel = Artikel(
             name=name,
             bestand=bestand,
             mindestbestand=mindestbestand,
-            barcode_filename=f"{barcode_id}.png"
+            barcode_filename=barcode_filename
         )
         db.session.add(artikel)
         db.session.commit()
