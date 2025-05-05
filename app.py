@@ -2,16 +2,13 @@ from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 import os
 import uuid
-import qrcode  # ✅ Nur QR-Code wird verwendet
+import qrcode
 
 app = Flask(__name__)
-
-# Datenbank: PostgreSQL (Render) oder lokal SQLite
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///lager.db")
 app.config['UPLOAD_FOLDER'] = 'static/barcodes'
 db = SQLAlchemy(app)
 
-# ✅ QR-Code automatisch generieren (statt Code128)
 def ensure_barcode_image(barcode_id):
     path = os.path.join(app.config['UPLOAD_FOLDER'], f"{barcode_id}.png")
     if not os.path.exists(path):
@@ -26,7 +23,6 @@ def ensure_barcode_image(barcode_id):
         img = qr.make_image(fill_color="black", back_color="white")
         img.save(path)
 
-# DB-Modell
 class Artikel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -63,6 +59,17 @@ def add():
         db.session.commit()
         return redirect(url_for('index'))
     return render_template('add.html')
+
+@app.route('/edit/<int:id>', methods=['GET', 'POST'])
+def edit(id):
+    artikel = Artikel.query.get_or_404(id)
+    if request.method == 'POST':
+        artikel.name = request.form['name']
+        artikel.bestand = int(request.form['bestand'])
+        artikel.mindestbestand = int(request.form['mindestbestand'])
+        db.session.commit()
+        return redirect(url_for('index'))
+    return render_template('edit.html', artikel=artikel)
 
 @app.route('/update/<int:id>', methods=['GET', 'POST'])
 def update(id):

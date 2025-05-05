@@ -24,22 +24,23 @@
       <th>Bestand</th>
       <th>Mindestbestand</th>
       <th>Barcode</th>
-      <th>Aktion</th>
+      <th>Aktionen</th>
     </tr>
     {% for art in artikel %}
     <tr class="{{ 'low-stock' if art.bestand < art.mindestbestand else '' }}">
       <td>{{ art.name }}</td>
       <td>{{ art.bestand }}</td>
       <td>{{ art.mindestbestand }}</td>
-      <td><img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" height="50"><br>{{ art.barcode_filename[:-4] }}</td>
+      <td><img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" height="50"></td>
       <td>
-        <a href="/update/{{ art.id }}">✏️</a>
-        <form action="/delete/{{ art.id }}" method="post" style="display:inline;">
-          <button type="submit">🗑️</button>
+        <a href="{{ url_for('edit', id=art.id) }}">✏️ Bearbeiten</a> |
+        <form action="{{ url_for('delete', id=art.id) }}" method="post" style="display:inline;" onsubmit="return confirm('Wirklich löschen?');">
+          <button type="submit">🗑️ Löschen</button>
         </form>
       </td>
     </tr>
     {% endfor %}
   </table>
+  
 </body>
 </html>

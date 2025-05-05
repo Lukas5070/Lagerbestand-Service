@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Artikel bearbeiten</title>
+</head>
+<body>
+  <h1>📝 Artikel bearbeiten</h1>
+  <form method="post">
+    <label>Name:<br>
+      <input type="text" name="name" value="{{ artikel.name }}" required>
+    </label><br><br>
+    <label>Bestand:<br>
+      <input type="number" name="bestand" value="{{ artikel.bestand }}" required>
+    </label><br><br>
+    <label>Mindestbestand:<br>
+      <input type="number" name="mindestbestand" value="{{ artikel.mindestbestand }}" required>
+    </label><br><br>
+    <button type="submit">💾 Speichern</button>
+    <a href="{{ url_for('index') }}">❌ Abbrechen</a>
+  </form>
+</body>
+</html>
