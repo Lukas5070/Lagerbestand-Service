@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Lagerübersicht</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+    tr.low-stock { background-color: #f99; }
+  </style>
+</head>
+<body>
+  <h1>Lagerbestand</h1>
+  <a href="/add">+ Artikel hinzufügen</a>
+  <table>
+    <tr>
+      <th>Name</th>
+      <th>Bestand</th>
+      <th>Mindestbestand</th>
+      <th>Barcode</th>
+      <th>Aktion</th>
+    </tr>
+    {% for art in artikel %}
+    <tr class="{{ 'low-stock' if art.bestand < art.mindestbestand else '' }}">
+      <td>{{ art.name }}</td>
+      <td>{{ art.bestand }}</td>
+      <td>{{ art.mindestbestand }}</td>
+      <td><img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" height="50"></td>
+      <td>
+        <a href="/update/{{ art.id }}">Bearbeiten</a> |
+        <form method="post" action="/delete/{{ art.id }}" style="display:inline;">
+          <button onclick="return confirm('Wirklich löschen?')">🗑</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</body>
+</html>
