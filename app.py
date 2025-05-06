@@ -3,6 +3,13 @@ from flask_sqlalchemy import SQLAlchemy
 import os
 import uuid
 import qrcode
+import smtplib
+from email.mime.text import MIMEText
+
+# 🔧 HIER ANPASSEN – deine Maildaten
+ABSENDER_EMAIL = "lager.servicefrick@gmail.com"
+ABSENDER_PASSWORT = "jqde sfwa cscd znrk"
+EMPFÄNGER_EMAIL = "service@haesler-ag.ch"
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///lager.db")
@@ -23,12 +30,33 @@ def ensure_barcode_image(barcode_id):
         img = qr.make_image(fill_color="black", back_color="white")
         img.save(path)
 
+def sende_warnung(artikel):
+    if artikel.bestand == artikel.mindestbestand:
+        nachricht = f"""Achtung: Der Artikel "{artikel.name}" hat den Mindestbestand erreicht!
+
+Aktueller Bestand: {artikel.bestand}
+Mindestbestand: {artikel.mindestbestand}
+Lagerplatz: {artikel.lagerplatz or 'nicht angegeben'}"""
+
+        msg = MIMEText(nachricht)
+        msg['Subject'] = f"Lagerwarnung: {artikel.name}"
+        msg['From'] = ABSENDER_EMAIL
+        msg['To'] = EMPFÄNGER_EMAIL
+
+        try:
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                server.login(ABSENDER_EMAIL, ABSENDER_PASSWORT)
+                server.send_message(msg)
+        except Exception as e:
+            print("Fehler beim E-Mail-Versand:", e)
+
 class Artikel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     bestand = db.Column(db.Integer, nullable=False, default=0)
     mindestbestand = db.Column(db.Integer, nullable=False, default=0)
     barcode_filename = db.Column(db.String(100), nullable=False)
+    lagerplatz = db.Column(db.String(100), nullable=True)
 
 @app.route('/')
 def index():
@@ -44,6 +72,7 @@ def add():
         name = request.form['name']
         bestand = int(request.form['bestand'])
         mindestbestand = int(request.form['mindestbestand'])
+        lagerplatz = request.form.get('lagerplatz', '')
 
         barcode_id = str(uuid.uuid4())[:8]
         barcode_filename = f"{barcode_id}.png"
@@ -53,6 +82,7 @@ def add():
             name=name,
             bestand=bestand,
             mindestbestand=mindestbestand,
+            lagerplatz=lagerplatz,
             barcode_filename=barcode_filename
         )
         db.session.add(artikel)
@@ -67,6 +97,7 @@ def edit(id):
         artikel.name = request.form['name']
         artikel.bestand = int(request.form['bestand'])
         artikel.mindestbestand = int(request.form['mindestbestand'])
+        artikel.lagerplatz = request.form.get('lagerplatz', '')
         db.session.commit()
         return redirect(url_for('index'))
     return render_template('edit.html', artikel=artikel)
@@ -75,12 +106,10 @@ def edit(id):
 def update(id):
     artikel = Artikel.query.get_or_404(id)
     if request.method == 'POST':
-        try:
-            delta = int(request.form['delta'])
-            artikel.bestand += delta
-            db.session.commit()
-        except:
-            return "Fehler beim Aktualisieren"
+        delta = int(request.form['delta'])
+        artikel.bestand += delta
+        db.session.commit()
+        sende_warnung(artikel)
         return redirect(url_for('index'))
     return render_template('update.html', artikel=artikel)
 
@@ -108,6 +137,7 @@ def adjust_barcode(barcode_id):
         elif aktion == 'entnehmen':
             artikel.bestand -= menge
         db.session.commit()
+        sende_warnung(artikel)
         return redirect(url_for('index'))
     return render_template('adjust.html', artikel=artikel)
 
