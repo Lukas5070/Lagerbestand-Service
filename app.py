@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 # 🔧 Mailkonfiguration
 ABSENDER_EMAIL = "lager.servicefrick@gmail.com"
-ABSENDER_PASSWORT = "jqde sfwa cscd znrk"
+ABSENDER_PASSWORT = "mgkn xyet iydf aqzl"
 EMPFÄNGER_EMAIL = "service@haesler-ag.ch"
 
 # 🔧 Flask App
