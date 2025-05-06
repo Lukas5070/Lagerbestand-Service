@@ -5,6 +5,8 @@ import uuid
 import qrcode
 import smtplib
 from email.mime.text import MIMEText
+from flask_migrate import Migrate
+
 
 # 🔧 HIER ANPASSEN – deine Maildaten
 ABSENDER_EMAIL = "lager.servicefrick@gmail.com"
@@ -15,6 +17,8 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///lager.db")
 app.config['UPLOAD_FOLDER'] = 'static/barcodes'
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+
 
 def ensure_barcode_image(barcode_id):
     path = os.path.join(app.config['UPLOAD_FOLDER'], f"{barcode_id}.png")

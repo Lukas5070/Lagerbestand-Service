@@ -1,46 +1,63 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Lagerübersicht</title>
+  <title>Lagerbestand</title>
   <style>
-    body { font-family: Arial; padding: 20px; }
+    body { font-family: Arial, sans-serif; padding: 20px; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
     .low-stock { background-color: #fdd; }
+    input[type="text"] { padding: 6px; width: 250px; margin-bottom: 10px; }
+    form.inline { display: inline; }
+    button { padding: 4px 10px; }
   </style>
+  <script>
+    function searchTable() {
+      const input = document.getElementById("searchInput").value.toLowerCase();
+      const rows = document.querySelectorAll("table tbody tr");
+      rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(input) ? "" : "none";
+      });
+    }
+  </script>
 </head>
 <body>
-  <h1>Lagerübersicht 📦</h1>
-  <p>
-    <a href="/add">➕ Artikel hinzufügen</a> |
-    <a href="/scan">📷 Kamera-Scan</a>
-    <a href="/barcodes">🏷️ Etiketten drucken</a>
-
-  </p>
+  <h1>Lagerbestand</h1>
+  <a href="/add">➕ Artikel hinzufügen</a> |
+  <a href="/barcodes">🏷️ Barcodes drucken</a> |
+  <a href="/scan">📷 Barcode scannen</a>
+  <br><br>
+  🔍 <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Artikelname oder Lagerplatz suchen...">
   <table>
-    <tr>
-      <th>Name</th>
-      <th>Bestand</th>
-      <th>Mindestbestand</th>
-      <th>Barcode</th>
-      <th>Aktionen</th>
-    </tr>
-    {% for art in artikel %}
-    <tr class="{{ 'low-stock' if art.bestand < art.mindestbestand else '' }}">
-      <td>{{ art.name }}</td>
-      <td>{{ art.bestand }}</td>
-      <td>{{ art.mindestbestand }}</td>
-      <td><img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" height="50"></td>
-      <td>
-        <a href="{{ url_for('edit', id=art.id) }}">✏️ Bearbeiten</a> |
-        <form action="{{ url_for('delete', id=art.id) }}" method="post" style="display:inline;" onsubmit="return confirm('Wirklich löschen?');">
-          <button type="submit">🗑️ Löschen</button>
-        </form>
-      </td>
-    </tr>
-    {% endfor %}
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Bestand</th>
+        <th>Mindestbestand</th>
+        <th>Lagerplatz</th>
+        <th>Barcode</th>
+        <th>Aktionen</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for art in artikel %}
+      <tr class="{{ 'low-stock' if art.bestand < art.mindestbestand else '' }}">
+        <td>{{ art.name }}</td>
+        <td>{{ art.bestand }}</td>
+        <td>{{ art.mindestbestand }}</td>
+        <td>{{ art.lagerplatz or '-' }}</td>
+        <td><img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" height="50"></td>
+        <td>
+          <a href="{{ url_for('edit', id=art.id) }}">✏️ Bearbeiten</a>
+          <form action="{{ url_for('delete', id=art.id) }}" method="post" class="inline" onsubmit="return confirm('Wirklich löschen?');">
+            <button type="submit">🗑️</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
   </table>
-  
 </body>
 </html>
