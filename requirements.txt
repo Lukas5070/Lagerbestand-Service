@@ -4,3 +4,5 @@ pillow
 qrcode
 psycopg2-binary
 Flask-Migrate
+sqlalchemy
+psycopg2-binary
