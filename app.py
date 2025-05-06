@@ -1,25 +1,25 @@
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 import os
 import uuid
 import qrcode
 import smtplib
 from email.mime.text import MIMEText
-from flask_migrate import Migrate
 
-
-# 🔧 HIER ANPASSEN – deine Maildaten
+# ==== Mail-Konfiguration (bitte anpassen) ====
 ABSENDER_EMAIL = "lager.servicefrick@gmail.com"
 ABSENDER_PASSWORT = "jqde sfwa cscd znrk"
 EMPFÄNGER_EMAIL = "service@haesler-ag.ch"
 
+# ==== Flask Setup ====
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///lager.db")
 app.config['UPLOAD_FOLDER'] = 'static/barcodes'
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
-
+# ==== Hilfsfunktionen ====
 def ensure_barcode_image(barcode_id):
     path = os.path.join(app.config['UPLOAD_FOLDER'], f"{barcode_id}.png")
     if not os.path.exists(path):
@@ -36,17 +36,15 @@ def ensure_barcode_image(barcode_id):
 
 def sende_warnung(artikel):
     if artikel.bestand == artikel.mindestbestand:
-        nachricht = f"""Achtung: Der Artikel "{artikel.name}" hat den Mindestbestand erreicht!
+        nachricht = f"""Achtung: Der Artikel \"{artikel.name}\" hat den Mindestbestand erreicht!
 
 Aktueller Bestand: {artikel.bestand}
 Mindestbestand: {artikel.mindestbestand}
 Lagerplatz: {artikel.lagerplatz or 'nicht angegeben'}"""
-
         msg = MIMEText(nachricht)
         msg['Subject'] = f"Lagerwarnung: {artikel.name}"
         msg['From'] = ABSENDER_EMAIL
         msg['To'] = EMPFÄNGER_EMAIL
-
         try:
             with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
                 server.login(ABSENDER_EMAIL, ABSENDER_PASSWORT)
@@ -54,6 +52,7 @@ Lagerplatz: {artikel.lagerplatz or 'nicht angegeben'}"""
         except Exception as e:
             print("Fehler beim E-Mail-Versand:", e)
 
+# ==== Datenmodell ====
 class Artikel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -62,9 +61,14 @@ class Artikel(db.Model):
     barcode_filename = db.Column(db.String(100), nullable=False)
     lagerplatz = db.Column(db.String(100), nullable=True)
 
+# ==== Routen ====
 @app.route('/')
 def index():
-    artikel = Artikel.query.all()
+    suche = request.args.get('suche')
+    if suche:
+        artikel = Artikel.query.filter(Artikel.name.ilike(f"%{suche}%")).all()
+    else:
+        artikel = Artikel.query.all()
     for art in artikel:
         barcode_id = art.barcode_filename[:-4]
         ensure_barcode_image(barcode_id)
@@ -77,18 +81,10 @@ def add():
         bestand = int(request.form['bestand'])
         mindestbestand = int(request.form['mindestbestand'])
         lagerplatz = request.form.get('lagerplatz', '')
-
         barcode_id = str(uuid.uuid4())[:8]
         barcode_filename = f"{barcode_id}.png"
         ensure_barcode_image(barcode_id)
-
-        artikel = Artikel(
-            name=name,
-            bestand=bestand,
-            mindestbestand=mindestbestand,
-            lagerplatz=lagerplatz,
-            barcode_filename=barcode_filename
-        )
+        artikel = Artikel(name=name, bestand=bestand, mindestbestand=mindestbestand, lagerplatz=lagerplatz, barcode_filename=barcode_filename)
         db.session.add(artikel)
         db.session.commit()
         return redirect(url_for('index'))
@@ -153,6 +149,7 @@ def barcodes():
         ensure_barcode_image(barcode_id)
     return render_template('barcodes.html', artikel=artikel)
 
+# ==== Hauptausführung ====
 if __name__ == '__main__':
     os.makedirs('static/barcodes', exist_ok=True)
     with app.app_context():
