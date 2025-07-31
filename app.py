@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 # 🔧 Mailkonfiguration
 ABSENDER_EMAIL = "lager.servicefrick@gmail.com"
-ABSENDER_PASSWORT = "Haesler4313!"
+ABSENDER_PASSWORT = "Haesler4313!"  # ❗ Tipp: In produktiven Umgebungen .env verwenden!
 EMPFÄNGER_EMAIL = "service@haesler-ag.ch"
 
 # 🔧 Flask App
@@ -18,7 +18,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:/
 app.config['UPLOAD_FOLDER'] = 'static/barcodes'
 db = SQLAlchemy(app)
 
-# 🔧 Spalte "lagerplatz" sicherstellen (nur beim ersten Start notwendig)
+# 🔧 Spalte "lagerplatz" sicherstellen
 with app.app_context():
     try:
         db.session.execute(text("ALTER TABLE artikel ADD COLUMN IF NOT EXISTS lagerplatz VARCHAR(100);"))
@@ -26,7 +26,7 @@ with app.app_context():
         print("✅ Spalte 'lagerplatz' vorhanden oder hinzugefügt.")
     except Exception as e:
         print("⚠️ Fehler beim Hinzufügen der Spalte 'lagerplatz':", e)
-        
+
 # 🔧 Spalte "bestelllink" sicherstellen
 with app.app_context():
     try:
@@ -80,7 +80,7 @@ class Artikel(db.Model):
     mindestbestand = db.Column(db.Integer, nullable=False, default=0)
     barcode_filename = db.Column(db.String(100), nullable=False)
     lagerplatz = db.Column(db.String(100), nullable=True)
-    bestelllink = db.Column(db.String(300), nullable=True)  # << NEU
+    bestelllink = db.Column(db.String(300), nullable=True)
 
 # 🔧 Startseite
 @app.route('/')
@@ -127,9 +127,8 @@ def edit(id):
         artikel.bestand = int(request.form['bestand'])
         artikel.mindestbestand = int(request.form['mindestbestand'])
         artikel.lagerplatz = request.form.get('lagerplatz', '')
+        artikel.bestelllink = request.form.get('bestelllink', '')  # ✅ Richtig gespeichert
         db.session.commit()
-        artikel.bestelllink = request.form.get('bestelllink', '')
-
         return redirect(url_for('index'))
     return render_template('edit.html', artikel=artikel)
 
