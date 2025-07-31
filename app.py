@@ -26,6 +26,15 @@ with app.app_context():
         print("✅ Spalte 'lagerplatz' vorhanden oder hinzugefügt.")
     except Exception as e:
         print("⚠️ Fehler beim Hinzufügen der Spalte 'lagerplatz':", e)
+        
+# 🔧 Spalte "bestelllink" sicherstellen
+with app.app_context():
+    try:
+        db.session.execute(text("ALTER TABLE artikel ADD COLUMN IF NOT EXISTS bestelllink VARCHAR(300);"))
+        db.session.commit()
+        print("✅ Spalte 'bestelllink' vorhanden oder hinzugefügt.")
+    except Exception as e:
+        print("⚠️ Fehler beim Hinzufügen der Spalte 'bestelllink':", e)
 
 # 🔧 QR-Code bei Bedarf erzeugen
 def ensure_barcode_image(barcode_id):
@@ -71,6 +80,7 @@ class Artikel(db.Model):
     mindestbestand = db.Column(db.Integer, nullable=False, default=0)
     barcode_filename = db.Column(db.String(100), nullable=False)
     lagerplatz = db.Column(db.String(100), nullable=True)
+    bestelllink = db.Column(db.String(300), nullable=True)  # << NEU
 
 # 🔧 Startseite
 @app.route('/')
