@@ -99,6 +99,7 @@ def add():
         bestand = int(request.form['bestand'])
         mindestbestand = int(request.form['mindestbestand'])
         lagerplatz = request.form.get('lagerplatz', '')
+        bestelllink = request.form.get('bestelllink', '')
 
         barcode_id = str(uuid.uuid4())[:8]
         barcode_filename = f"{barcode_id}.png"
@@ -109,7 +110,8 @@ def add():
             bestand=bestand,
             mindestbestand=mindestbestand,
             lagerplatz=lagerplatz,
-            barcode_filename=barcode_filename
+            barcode_filename=barcode_filename,
+            bestelllink=bestelllink
         )
         db.session.add(artikel)
         db.session.commit()
@@ -126,6 +128,8 @@ def edit(id):
         artikel.mindestbestand = int(request.form['mindestbestand'])
         artikel.lagerplatz = request.form.get('lagerplatz', '')
         db.session.commit()
+        artikel.bestelllink = request.form.get('bestelllink', '')
+
         return redirect(url_for('index'))
     return render_template('edit.html', artikel=artikel)
 
