@@ -82,10 +82,10 @@ class Artikel(db.Model):
     lagerplatz = db.Column(db.String(100), nullable=True)
     bestelllink = db.Column(db.String(300), nullable=True)
 
-# 🔧 Startseite
+# 🔧 Startseite – alphabetisch sortiert
 @app.route('/')
 def index():
-    artikel = Artikel.query.all()
+    artikel = Artikel.query.order_by(Artikel.name.asc()).all()
     for art in artikel:
         barcode_id = art.barcode_filename[:-4]
         ensure_barcode_image(barcode_id)
@@ -127,7 +127,7 @@ def edit(id):
         artikel.bestand = int(request.form['bestand'])
         artikel.mindestbestand = int(request.form['mindestbestand'])
         artikel.lagerplatz = request.form.get('lagerplatz', '')
-        artikel.bestelllink = request.form.get('bestelllink', '')  # ✅ Richtig gespeichert
+        artikel.bestelllink = request.form.get('bestelllink', '')
         db.session.commit()
         return redirect(url_for('index'))
     return render_template('edit.html', artikel=artikel)
