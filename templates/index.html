@@ -47,12 +47,17 @@
       padding: 12px;
       border-bottom: 1px solid #eee;
       text-align: center;
+      cursor: default;
     }
 
     th {
       background-color: #007bff;
       color: white;
+      cursor: pointer;
     }
+
+    th.asc::after { content: " ▲"; }
+    th.desc::after { content: " ▼"; }
 
     .btn {
       padding: 6px 10px;
@@ -65,37 +70,17 @@
       margin: 2px;
     }
 
-    .btn-edit {
-      background-color: #28a745;
-    }
+    .btn-edit { background-color: #28a745; }
+    .btn-delete { background-color: #dc3545; }
+    .btn-order { background-color: #17a2b8; }
 
-    .btn-delete {
-      background-color: #dc3545;
-    }
+    .status-green { color: #28a745; font-weight: bold; }
+    .status-yellow { color: #ffc107; font-weight: bold; }
+    .status-red { color: #dc3545; font-weight: bold; }
 
-    .btn-order {
-      background-color: #17a2b8;
-    }
-
-    .status-green {
-      color: #28a745;
-      font-weight: bold;
-    }
-
-    .status-yellow {
-      color: #ffc107;
-      font-weight: bold;
-    }
-
-    .status-red {
-      color: #dc3545;
-      font-weight: bold;
-    }
-
-    .inline-form {
-      display: inline;
-    }
+    .inline-form { display: inline; }
   </style>
+
   <script>
     function searchTable() {
       const searchInput = document.getElementById("searchInput").value.toLowerCase();
@@ -117,6 +102,33 @@
 
         row.style.display = (matchesSearch && matchesFilter) ? "" : "none";
       });
+    }
+
+    function sortTable(columnIndex) {
+      const table = document.querySelector("table tbody");
+      const rows = Array.from(table.rows);
+      const header = document.querySelectorAll("th")[columnIndex];
+
+      const isAsc = header.classList.contains("asc");
+      document.querySelectorAll("th").forEach(th => th.classList.remove("asc", "desc"));
+
+      rows.sort((a, b) => {
+        const valA = a.cells[columnIndex].innerText.trim().toLowerCase();
+        const valB = b.cells[columnIndex].innerText.trim().toLowerCase();
+
+        const numA = parseFloat(valA.replace(",", "."));
+        const numB = parseFloat(valB.replace(",", "."));
+
+        if (!isNaN(numA) && !isNaN(numB)) {
+          return isAsc ? numA - numB : numB - numA;
+        }
+
+        return isAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      });
+
+      rows.forEach(row => table.appendChild(row));
+      header.classList.toggle("asc", !isAsc);
+      header.classList.toggle("desc", isAsc);
     }
   </script>
 </head>
@@ -142,11 +154,11 @@
   <table>
     <thead>
       <tr>
-        <th>Name</th>
-        <th>Bestand</th>
-        <th>Mindestbestand</th>
+        <th onclick="sortTable(0)">Name</th>
+        <th onclick="sortTable(1)">Bestand</th>
+        <th onclick="sortTable(2)">Mindestbestand</th>
         <th>Status</th>
-        <th>Lagerplatz</th>
+        <th onclick="sortTable(4)">Lagerplatz</th>
         <th>Barcode</th>
         <th>Aktionen</th>
       </tr>
