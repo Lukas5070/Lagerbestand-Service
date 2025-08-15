@@ -6,6 +6,7 @@ import qrcode
 import smtplib
 from email.mime.text import MIMEText
 from sqlalchemy import text
+from datetime import datetime  # 🆕 Wichtig für created_at
 
 # 🔧 Mailkonfiguration
 ABSENDER_EMAIL = "lager.servicefrick@gmail.com"
@@ -35,6 +36,18 @@ with app.app_context():
         print("✅ Spalte 'bestelllink' vorhanden oder hinzugefügt.")
     except Exception as e:
         print("⚠️ Fehler beim Hinzufügen der Spalte 'bestelllink':", e)
+
+# 🔧 Spalte "created_at" sicherstellen (🆕 NEU)
+with app.app_context():
+    try:
+        db.session.execute(text("""
+            ALTER TABLE artikel 
+            ADD COLUMN IF NOT EXISTS created_at DATETIME DEFAULT CURRENT_TIMESTAMP;
+        """))
+        db.session.commit()
+        print("✅ Spalte 'created_at' vorhanden oder hinzugefügt.")
+    except Exception as e:
+        print("⚠️ Fehler beim Hinzufügen der Spalte 'created_at':", e)
 
 # 🔧 QR-Code bei Bedarf erzeugen
 def ensure_barcode_image(barcode_id):
@@ -66,7 +79,7 @@ Lagerplatz: {artikel.lagerplatz or 'nicht angegeben'}"""
         msg['To'] = EMPFÄNGER_EMAIL
 
         try:
-            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            with smtpllib.SMTP_SSL('smtp.gmail.com', 465) as server:
                 server.login(ABSENDER_EMAIL, ABSENDER_PASSWORT)
                 server.send_message(msg)
         except Exception as e:
@@ -81,6 +94,7 @@ class Artikel(db.Model):
     barcode_filename = db.Column(db.String(100), nullable=False)
     lagerplatz = db.Column(db.String(100), nullable=True)
     bestelllink = db.Column(db.String(300), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # 🆕 hinzugefügt
 
 # 🔧 Startseite – alphabetisch sortiert
 @app.route('/')
