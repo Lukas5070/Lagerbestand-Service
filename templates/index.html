@@ -41,9 +41,16 @@
     .qrbox img{height:50px;width:auto;display:block}
     .qrid{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#555;background:#f6f6f6;border:1px solid #e0e0e0;border-radius:4px;padding:2px 6px;white-space:nowrap}
 
+    .note{
+      text-align:left; max-width:420px; margin:0 auto; color:#1f2937;
+      line-height:1.35; word-break:break-word; white-space:normal;
+    }
+    .note .badge{display:inline-block;background:#fff3cd;border:1px solid #ffe69c;color:#7a5d00;border-radius:999px;padding:2px 8px;font-size:12px;margin-right:6px}
+    .muted{color:#6b7280}
+
     tr:target{outline:3px solid var(--blue);background:#e8f1ff}
 
-    /* ---------- Mobile: Tabelle → Kartenansicht ---------- */
+    /* Mobile → Karten */
     @media (max-width: 768px){
       .top-links a{flex:1 1 100%}
       .controls{flex-direction:column;align-items:stretch}
@@ -54,14 +61,11 @@
       tbody tr{border-bottom:0;margin:12px 12px;border:1px solid var(--bd);border-radius:10px;background:#fff;overflow:hidden}
       td{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #f0f2f8}
       td:last-child{border-bottom:none}
-      td::before{
-        content:attr(data-label);
-        font-weight:600;color:#667085;margin-right:12px;flex:0 0 auto
-      }
-      /* Spalten-Titel für jede Zelle */
+      td::before{content:attr(data-label);font-weight:600;color:#667085;margin-right:12px;flex:0 0 auto}
       td[data-label="Aktionen"]{flex-wrap:wrap;gap:8px}
       .btn{padding:10px 12px;font-size:16px}
       .qrbox img{height:42px}
+      .note{max-width:unset;text-align:right}
     }
   </style>
 
@@ -87,10 +91,8 @@
       var headers = document.querySelectorAll("thead th");
       var header = headers[colIndex];
       if (!header || header.classList.contains("nosort")) return;
-
       var isAsc = header.classList.contains("asc");
       for (var h=0;h<headers.length;h++){ headers[h].classList.remove("asc","desc"); }
-
       rows.sort(function(a,b){
         var A = (a.cells[colIndex].innerText || "").trim().toLowerCase();
         var B = (b.cells[colIndex].innerText || "").trim().toLowerCase();
@@ -98,7 +100,6 @@
         if (!isNaN(nA) && !isNaN(nB)) return isAsc ? (nA-nB) : (nB-nA);
         return isAsc ? A.localeCompare(B) : B.localeCompare(A);
       });
-
       for (var i=0;i<rows.length;i++){ tbody.appendChild(rows[i]); }
       header.classList.toggle("asc", !isAsc);
       header.classList.toggle("desc", isAsc);
@@ -134,6 +135,7 @@
           <th onclick="sortTable(2)">Mindestbestand</th>
           <th class="nosort">Status</th>
           <th onclick="sortTable(4)">Lagerplatz</th>
+          <th class="nosort">Hinweis</th>  <!-- 🆕 -->
           <th class="nosort">Barcode</th>
           <th class="nosort">Aktionen</th>
         </tr>
@@ -160,25 +162,7 @@
               {% endif %}
             </td>
             <td data-label="Lagerplatz">{{ art.lagerplatz or '-' }}</td>
-            <td data-label="Barcode">
-              <div class="qrbox">
-                <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="QR">
-                <span class="qrid">{{ id_plain }}</span>
-              </div>
-            </td>
-            <td data-label="Aktionen">
-              <a href="{{ url_for('edit', id=art.id) }}" class="btn btn-edit">✏️ Bearbeiten</a>
-              <form action="{{ url_for('delete', id=art.id) }}" method="post" class="inline-form" onsubmit="return confirm('Wirklich löschen?');">
-                <button type="submit" class="btn btn-delete">🗑️ Löschen</button>
-              </form>
-              {% if art.bestelllink %}
-                <a href="{{ art.bestelllink }}" target="_blank" rel="noopener" class="btn btn-order">🔗 Bestellen</a>
-              {% endif %}
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</body>
-</html>
+            <td data-label="Hinweis">
+              {% if art.hinweis %}
+                <div class="note" title="{{ art.hinweis }}">
+                  <span class="badge">⚠
