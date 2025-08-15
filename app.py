@@ -6,11 +6,11 @@ import qrcode
 import smtplib
 from email.mime.text import MIMEText
 from sqlalchemy import text
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # 🔧 Mailkonfiguration
 ABSENDER_EMAIL = "lager.servicefrick@gmail.com"
-ABSENDER_PASSWORT = "Haesler4313!"  # ❗ In produktiven Umgebungen .env verwenden
+ABSENDER_PASSWORT = "Haesler4313!"  # ❗ In Produktion unbedingt .env nutzen
 EMPFÄNGER_EMAIL = "service@haesler-ag.ch"
 
 # 🔧 Flask App
@@ -19,23 +19,23 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:/
 app.config['UPLOAD_FOLDER'] = 'static/barcodes'
 db = SQLAlchemy(app)
 
-# 🔧 Spalte "lagerplatz" sicherstellen
+# 🔧 Spalte "lagerplatz"
 with app.app_context():
     try:
         db.session.execute(text("ALTER TABLE artikel ADD COLUMN IF NOT EXISTS lagerplatz VARCHAR(100);"))
         db.session.commit()
         print("✅ Spalte 'lagerplatz' vorhanden oder hinzugefügt.")
     except Exception as e:
-        print("⚠️ Fehler beim Hinzufügen der Spalte 'lagerplatz':", e)
+        print("⚠️ Fehler bei 'lagerplatz':", e)
 
-# 🔧 Spalte "bestelllink" sicherstellen
+# 🔧 Spalte "bestelllink"
 with app.app_context():
     try:
         db.session.execute(text("ALTER TABLE artikel ADD COLUMN IF NOT EXISTS bestelllink VARCHAR(300);"))
         db.session.commit()
         print("✅ Spalte 'bestelllink' vorhanden oder hinzugefügt.")
     except Exception as e:
-        print("⚠️ Fehler beim Hinzufügen der Spalte 'bestelllink':", e)
+        print("⚠️ Fehler bei 'bestelllink':", e)
 
 # 🔧 Spalte "created_at" (PostgreSQL-kompatibel)
 with app.app_context():
@@ -55,9 +55,9 @@ with app.app_context():
         db.session.commit()
         print("✅ Spalte 'created_at' vorhanden oder hinzugefügt.")
     except Exception as e:
-        print("⚠️ Fehler beim Hinzufügen der Spalte 'created_at':", e)
+        print("⚠️ Fehler bei 'created_at':", e)
 
-# 🔧 QR-Code erzeugen
+# 🔧 QR-Code erzeugen, falls nicht vorhanden
 def ensure_barcode_image(barcode_id):
     path = os.path.join(app.config['UPLOAD_FOLDER'], f"{barcode_id}.png")
     if not os.path.exists(path):
@@ -72,7 +72,7 @@ def ensure_barcode_image(barcode_id):
         img = qr.make_image(fill_color="black", back_color="white")
         img.save(path)
 
-# 🔧 E-Mail bei Mindestbestand
+# 🔧 Mail bei Mindestbestand senden
 def sende_warnung(artikel):
     if artikel.bestand == artikel.mindestbestand:
         nachricht = f"""Achtung: Der Artikel "{artikel.name}" hat den Mindestbestand erreicht!
@@ -174,7 +174,7 @@ def delete(id):
     db.session.commit()
     return redirect(url_for('index'))
 
-# 🔧 Scanseite
+# 🔧 Scan-Seite
 @app.route('/scan')
 def scan():
     return render_template('scan.html')
@@ -197,17 +197,27 @@ def adjust_barcode(barcode_id):
         return redirect(url_for('index'))
     return render_template('adjust.html', artikel=artikel)
 
-# 🔧 Barcode-Seite
+# 🔧 Etiketten anzeigen mit Filter „neu“ & Suchfunktion
 @app.route('/barcodes')
 def barcodes():
-    artikel = Artikel.query.order_by(Artikel.name.asc()).all()
-    neue_artikel = Artikel.query.order_by(Artikel.created_at.desc()).limit(5).all()
-    for art in artikel:
+    query = request.args.get("q", "").strip().lower()
+    alle_artikel = Artikel.query.order_by(Artikel.name.asc()).all()
+
+    if query:
+        gefiltert = [a for a in alle_artikel if query in a.name.lower()]
+    else:
+        gefiltert = alle_artikel
+
+    eine_woche = datetime.utcnow() - timedelta(days=7)
+    neue_artikel = Artikel.query.filter(Artikel.created_at >= eine_woche).order_by(Artikel.created_at.desc()).all()
+
+    for art in gefiltert:
         barcode_id = art.barcode_filename[:-4]
         ensure_barcode_image(barcode_id)
-    return render_template('barcodes.html', artikel=artikel, neue_artikel=neue_artikel)
 
-# 🔧 App starten
+    return render_template('barcodes.html', artikel=gefiltert, neue_artikel=neue_artikel, suchbegriff=query)
+
+# 🔧 Starten
 if __name__ == '__main__':
     os.makedirs('static/barcodes', exist_ok=True)
     with app.app_context():
