@@ -105,7 +105,15 @@
         <div class="neu-eintrag">
           <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="Barcode">
           <strong>{{ art.name }}</strong><br>
-          <small>ID: {{ art.barcode_filename[:-4] }} | Hinzugefügt: {{ art.created_at.strftime('%d.%m.%Y %H:%M') if art.created_at else '–' }}</small>
+          <small>
+            ID: {{ art.barcode_filename[:-4] }} |
+            Hinzugefügt:
+            {% if art.created_at and art.created_at.strftime %}
+              {{ art.created_at.strftime('%d.%m.%Y %H:%M') }}
+            {% else %}
+              –
+            {% endif %}
+          </small>
         </div>
       {% endfor %}
     {% else %}
