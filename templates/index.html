@@ -2,142 +2,75 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Lagerbestand</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lagerbestand</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f5f5f5;
-      padding: 30px;
+    :root{
+      --blue:#0d6efd; --green:#28a745; --amber:#ffc107; --red:#dc3545; --muted:#6c757d;
+      --bg:#f5f5f5; --card:#fff; --bd:#e5e5e5; --text:#222;
     }
-
-    h1 { margin-bottom: 20px; }
-
-    .top-links { margin-bottom: 15px; }
-    .top-links a {
-      margin-right: 15px;
-      text-decoration: none;
-      color: #007bff;
-      font-weight: bold;
-    }
-
-    .search-box { margin: 20px 0; }
-    input[type="text"], select {
-      padding: 10px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      margin-right: 10px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background-color: #fff;
-      box-shadow: 0 0 8px rgba(0,0,0,0.1);
-    }
-
-    th, td {
-      padding: 12px;
-      border-bottom: 1px solid #eee;
-      text-align: center;
-      cursor: default;
-      vertical-align: middle;
-    }
-
-    th {
-      background-color: #007bff;
-      color: white;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    th.nosort { cursor: default; }
-    th.asc::after { content: " ▲"; }
-    th.desc::after { content: " ▼"; }
-
-    .btn {
-      padding: 6px 10px;
-      border: none;
-      border-radius: 4px;
-      text-decoration: none;
-      color: white;
-      cursor: pointer;
-      font-size: 0.9em;
-      margin: 2px;
-      display: inline-block;
-    }
-    .btn-edit { background-color: #28a745; }
-    .btn-delete { background-color: #dc3545; }
-    .btn-order { background-color: #17a2b8; }
-
-    .status-green { color: #28a745; font-weight: bold; }
-    .status-yellow { color: #ffc107; font-weight: bold; }
-    .status-red { color: #dc3545; font-weight: bold; }
-
-    .inline-form { display: inline; }
-
-    /* Bildzelle */
-    .thumb {
-      width: 70px;
-      height: 70px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      overflow: hidden;
-      background: #fff;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .thumb img { max-width: 100%; max-height: 100%; display: block; }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+    h1{margin:24px 24px 8px 24px;font-size:28px}
+    .top-links{margin:0 24px 16px 24px;display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+    .top-links a{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:6px;background:#fff;border:1px solid var(--bd);text-decoration:none;color:var(--blue);font-weight:600}
+    .controls{margin:0 24px 16px 24px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .controls input[type="text"], .controls select{padding:10px;border:1px solid #ccc;border-radius:6px;background:#fff}
+    .tablewrap{margin:0 24px 24px 24px;background:var(--card);border:1px solid var(--bd);border-radius:8px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.05)}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:12px;border-bottom:1px solid #eee;text-align:center;vertical-align:middle}
+    thead th{background:var(--blue);color:#fff;cursor:pointer;user-select:none}
+    thead th.nosort{cursor:default}
+    thead th.asc::after{content:" ▲";} thead th.desc::after{content:" ▼";}
+    .inline-form{display:inline}
+    .btn{display:inline-block;padding:6px 10px;border-radius:4px;color:#fff;text-decoration:none;margin:2px;font-size:.9em}
+    .btn-edit{background:var(--green)}
+    .btn-delete{background:var(--red)}
+    .btn-order{background:#17a2b8}
+    .status-green{color:var(--green);font-weight:700}
+    .status-yellow{color:#c58a00;font-weight:700}
+    .status-red{color:var(--red);font-weight:700}
+    .thumb{width:70px;height:70px;border:1px solid #ddd;border-radius:6px;overflow:hidden;background:#fff;display:inline-flex;align-items:center;justify-content:center}
+    .thumb img{max-width:100%;max-height:100%;display:block}
+    .qrid{font-size:11px;color:#666;margin-top:4px}
   </style>
 
   <script>
     function searchTable() {
-      const q = (document.getElementById("searchInput").value || "").toLowerCase().trim();
-      const filterValue = document.getElementById("statusFilter").value; // 'alle' | 'kritisch' | 'knapp'
-      const rows = document.querySelectorAll("table tbody tr");
-
-      rows.forEach(row => {
-        const name = (row.dataset.name || "");
-        const lp   = (row.dataset.lagerplatz || "");
-        const id   = (row.dataset.id || "");
-        const status = (row.dataset.status || ""); // 'kritisch' | 'knapp' | 'ausreichend'
-
-        const matchesSearch = !q || name.includes(q) || lp.includes(q) || id.includes(q);
-
-        let matchesFilter = true;
-        if (filterValue === "kritisch" && status !== "kritisch") matchesFilter = false;
-        if (filterValue === "knapp"    && status !== "knapp")    matchesFilter = false;
-
-        row.style.display = (matchesSearch && matchesFilter) ? "" : "none";
-      });
+      var q = (document.getElementById("searchInput").value || "").toLowerCase().trim();
+      var filterValue = document.getElementById("statusFilter").value; // 'alle' | 'kritisch' | 'knapp'
+      var rows = document.querySelectorAll("tbody tr");
+      for (var i=0;i<rows.length;i++){
+        var r = rows[i];
+        var name = r.getAttribute("data-name") || "";
+        var lp   = r.getAttribute("data-lagerplatz") || "";
+        var id   = r.getAttribute("data-id") || "";
+        var status = r.getAttribute("data-status") || "";
+        var matchesSearch = !q || name.indexOf(q)!==-1 || lp.indexOf(q)!==-1 || id.indexOf(q)!==-1;
+        var matchesFilter = (filterValue==="alle") || (status===filterValue);
+        r.style.display = (matchesSearch && matchesFilter) ? "" : "none";
+      }
     }
 
-    function sortTable(columnIndex) {
-      // columnIndex bezieht sich auf die TH/TD-Position in DERZEITIGER Tabelle
-      const tableBody = document.querySelector("table tbody");
-      const rows = Array.from(tableBody.rows);
-      const headers = document.querySelectorAll("thead th");
-      const header = headers[columnIndex];
+    function sortTable(colIndex){
+      var tbody = document.querySelector("tbody");
+      var rows = Array.prototype.slice.call(tbody.rows);
+      var headers = document.querySelectorAll("thead th");
+      var header = headers[colIndex];
       if (header.classList.contains("nosort")) return;
 
-      const isAsc = header.classList.contains("asc");
-      headers.forEach(th => th.classList.remove("asc", "desc"));
+      var isAsc = header.classList.contains("asc");
+      for (var h=0;h<headers.length;h++){ headers[h].classList.remove("asc","desc"); }
 
-      rows.sort((a, b) => {
-        const valA = (a.cells[columnIndex].innerText || "").trim().toLowerCase();
-        const valB = (b.cells[columnIndex].innerText || "").trim().toLowerCase();
-
-        const numA = parseFloat(valA.replace(",", "."));
-        const numB = parseFloat(valB.replace(",", "."));
-
-        if (!isNaN(numA) && !isNaN(numB)) {
-          return isAsc ? (numA - numB) : (numB - numA);
-        }
-        return isAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      rows.sort(function(a,b){
+        var A = (a.cells[colIndex].innerText || "").trim().toLowerCase();
+        var B = (b.cells[colIndex].innerText || "").trim().toLowerCase();
+        var nA = parseFloat(A.replace(",", ".")); var nB = parseFloat(B.replace(",", "."));
+        if (!isNaN(nA) && !isNaN(nB)) return isAsc ? (nA-nB) : (nB-nA);
+        return isAsc ? A.localeCompare(B) : B.localeCompare(A);
       });
 
-      rows.forEach(row => tableBody.appendChild(row));
+      for (var i=0;i<rows.length;i++){ tbody.appendChild(rows[i]); }
       header.classList.toggle("asc", !isAsc);
       header.classList.toggle("desc", isAsc);
     }
@@ -152,9 +85,9 @@
     <a href="/scan">📷 Barcode scannen</a>
   </div>
 
-  <div class="search-box">
+  <div class="controls">
     🔍 <input type="text" id="searchInput" oninput="searchTable()" placeholder="Artikel, Lagerplatz oder Barcode-ID suchen…">
-    📊 Filter:
+    📊 <label for="statusFilter">Filter:</label>
     <select id="statusFilter" onchange="searchTable()">
       <option value="alle">Alle</option>
       <option value="kritisch">Nur kritische</option>
@@ -162,65 +95,65 @@
     </select>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th class="nosort">Bild</th>
-        <th onclick="sortTable(1)">Name</th>
-        <th onclick="sortTable(2)">Bestand</th>
-        <th onclick="sortTable(3)">Mindestbestand</th>
-        <th class="nosort">Status</th>
-        <th onclick="sortTable(5)">Lagerplatz</th>
-        <th class="nosort">Barcode</th>
-        <th class="nosort">Aktionen</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for art in artikel %}
-      {% set id_plain = art.barcode_filename[:-4] %}
-      {% set status_txt = 'kritisch' if art.bestand < art.mindestbestand else ('knapp' if art.bestand == art.mindestbestand else 'ausreichend') %}
-      {% set product_img = art.image_filename and url_for('static', filename='product_images/' + art.image_filename) %}
-      {% set qr_img = url_for('static', filename='barcodes/' + art.barcode_filename) %}
-      {% set thumb = product_img or qr_img %}
-      <tr
-        data-name="{{ (art.name or '')|lower }}"
-        data-lagerplatz="{{ (art.lagerplatz or '')|lower }}"
-        data-id="{{ id_plain|lower }}"
-        data-status="{{ status_txt }}">
-        <td>
-          <div class="thumb">
-            <img src="{{ thumb }}" alt="{{ art.name }}">
-          </div>
-        </td>
-        <td>{{ art.name }}</td>
-        <td>{{ art.bestand }}</td>
-        <td>{{ art.mindestbestand }}</td>
-        <td>
-          {% if art.bestand < art.mindestbestand %}
-            <span class="status-red">🔴 kritisch</span>
-          {% elif art.bestand == art.mindestbestand %}
-            <span class="status-yellow">🟡 knapp</span>
-          {% else %}
-            <span class="status-green">🟢 ausreichend</span>
-          {% endif %}
-        </td>
-        <td>{{ art.lagerplatz or '-' }}</td>
-        <td>
-          <img src="{{ qr_img }}" height="50" alt="QR">
-          <div style="font-size:11px; color:#666; margin-top:4px;">ID: {{ id_plain }}</div>
-        </td>
-        <td>
-          <a href="{{ url_for('edit', id=art.id) }}" class="btn btn-edit">✏️ Bearbeiten</a>
-          <form action="{{ url_for('delete', id=art.id) }}" method="post" class="inline-form" onsubmit="return confirm('Wirklich löschen?');">
-            <button type="submit" class="btn btn-delete">🗑️</button>
-          </form>
-          {% if art.bestelllink %}
-            <a href="{{ art.bestelllink }}" target="_blank" rel="noopener" class="btn btn-order">🔗 Bestellen</a>
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="nosort">Bild</th>
+          <th onclick="sortTable(1)">Name</th>
+          <th onclick="sortTable(2)">Bestand</th>
+          <th onclick="sortTable(3)">Mindestbestand</th>
+          <th class="nosort">Status</th>
+          <th onclick="sortTable(5)">Lagerplatz</th>
+          <th class="nosort">Barcode</th>
+          <th class="nosort">Aktionen</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for art in artikel %}
+          {% set id_plain = art.barcode_filename[:-4] %}
+          {% set status_txt = 'kritisch' if art.bestand < art.mindestbestand else ('knapp' if art.bestand == art.mindestbestand else 'ausreichend') %}
+          <tr
+            data-name="{{ (art.name or '')|lower }}"
+            data-lagerplatz="{{ (art.lagerplatz or '')|lower }}"
+            data-id="{{ id_plain|lower }}"
+            data-status="{{ status_txt }}">
+            <td>
+              <div class="thumb">
+                <!-- Herstellerbild on-demand; fällt intern auf QR zurück -->
+                <img src="{{ url_for('product_image', id=art.id) }}" alt="{{ art.name }}">
+              </div>
+            </td>
+            <td>{{ art.name }}</td>
+            <td>{{ art.bestand }}</td>
+            <td>{{ art.mindestbestand }}</td>
+            <td>
+              {% if art.bestand < art.mindestbestand %}
+                <span class="status-red">🔴 kritisch</span>
+              {% elif art.bestand == art.mindestbestand %}
+                <span class="status-yellow">🟡 knapp</span>
+              {% else %}
+                <span class="status-green">🟢 ausreichend</span>
+              {% endif %}
+            </td>
+            <td>{{ art.lagerplatz or '-' }}</td>
+            <td>
+              <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" height="50" alt="QR">
+              <div class="qrid">ID: {{ id_plain }}</div>
+            </td>
+            <td>
+              <a href="{{ url_for('edit', id=art.id) }}" class="btn btn-edit">✏️ Bearbeiten</a>
+              <form action="{{ url_for('delete', id=art.id) }}" method="post" class="inline-form" onsubmit="return confirm('Wirklich löschen?');">
+                <button type="submit" class="btn btn-delete">🗑️</button>
+              </form>
+              {% if art.bestelllink %}
+                <a href="{{ art.bestelllink }}" target="_blank" rel="noopener" class="btn btn-order">🔗 Bestellen</a>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </body>
 </html>
