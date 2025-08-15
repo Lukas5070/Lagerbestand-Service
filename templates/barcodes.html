@@ -84,6 +84,20 @@
     .druckbereich.ausblenden {
       display: none;
     }
+
+    .etikett input[type="checkbox"] {
+      margin-top: 5px;
+    }
+
+    .etikett.ausgeblendet {
+      display: none;
+    }
+
+    #suchfeld {
+      width: 300px;
+      padding: 5px;
+      margin-right: 10px;
+    }
   </style>
 </head>
 <body>
@@ -91,13 +105,15 @@
   <!-- Steuerelemente -->
   <div class="noprint">
     <a href="/" style="padding:6px 12px; background:#007BFF; color:#fff; text-decoration:none; border-radius:5px;">⬅ Zurück</a>
-    <button onclick="zeigeNurNeue()" style="padding:6px 12px; background:#17a2b8; color:#fff; border:none; border-radius:5px;">🖨️ Nur neue Etiketten drucken</button>
-    <button onclick="zeigeAlle()" style="padding:6px 12px; background:#6c757d; color:#fff; border:none; border-radius:5px;">📦 Alle Etiketten drucken</button>
+    <input type="text" id="suchfeld" placeholder="🔍 Artikel suchen..." onkeyup="filterEtiketten()">
+    <button onclick="zeigeNurNeue()" style="padding:6px 12px; background:#17a2b8; color:#fff; border:none; border-radius:5px;">🆕 Nur neue drucken</button>
+    <button onclick="zeigeAlle()" style="padding:6px 12px; background:#6c757d; color:#fff; border:none; border-radius:5px;">📦 Alle anzeigen</button>
+    <button onclick="zeigeAuswahl()" style="padding:6px 12px; background:#ffc107; color:#000; border:none; border-radius:5px;">✅ Nur Auswahl drucken</button>
     <button onclick="window.print()" style="padding:6px 12px; background:#28a745; color:#fff; border:none; border-radius:5px;">🖨️ Jetzt drucken</button>
     <p style="margin-top:10px;">Druckeinstellungen: A4 · 100 % · Keine Ränder · Hintergrundgrafiken ✅</p>
   </div>
 
-  <!-- Zuletzt hinzugefügte Artikel (nicht druckbar) -->
+  <!-- Zuletzt hinzugefügte Artikel -->
   <div class="noprint neu-artikel">
     <h2>🆕 Zuletzt hinzugefügte Artikel</h2>
     {% if neue_artikel %}
@@ -105,15 +121,7 @@
         <div class="neu-eintrag">
           <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="Barcode">
           <strong>{{ art.name }}</strong><br>
-          <small>
-            ID: {{ art.barcode_filename[:-4] }} |
-            Hinzugefügt:
-            {% if art.created_at and art.created_at.strftime %}
-              {{ art.created_at.strftime('%d.%m.%Y %H:%M') }}
-            {% else %}
-              –
-            {% endif %}
-          </small>
+          <small>ID: {{ art.barcode_filename[:-4] }} | Hinzugefügt: {{ art.created_at.strftime('%d.%m.%Y %H:%M') if art.created_at else '–' }}</small>
         </div>
       {% endfor %}
     {% else %}
@@ -121,7 +129,7 @@
     {% endif %}
   </div>
 
-  <!-- Etiketten: NUR neue Artikel -->
+  <!-- Etiketten – Neue Artikel -->
   <div id="nur-neue" class="druckbereich ausblenden">
     {% for i in range(0, neue_artikel|length, 12) %}
       <div class="seite">
@@ -129,14 +137,15 @@
           <div class="etikett">
             <strong>{{ art.name }}</strong><br>
             <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}"><br>
-            <small>{{ art.barcode_filename[:-4] }}</small>
+            <small>{{ art.barcode_filename[:-4] }}</small><br>
+            <input type="checkbox" class="checkbox-auswahl">
           </div>
         {% endfor %}
       </div>
     {% endfor %}
   </div>
 
-  <!-- Etiketten: ALLE Artikel -->
+  <!-- Etiketten – Alle Artikel -->
   <div id="alle-artikel" class="druckbereich">
     {% for i in range(0, artikel|length, 12) %}
       <div class="seite">
@@ -144,14 +153,15 @@
           <div class="etikett">
             <strong>{{ art.name }}</strong><br>
             <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}"><br>
-            <small>{{ art.barcode_filename[:-4] }}</small>
+            <small>{{ art.barcode_filename[:-4] }}</small><br>
+            <input type="checkbox" class="checkbox-auswahl">
           </div>
         {% endfor %}
       </div>
     {% endfor %}
   </div>
 
-  <!-- Umschalter -->
+  <!-- Umschalter & Filter -->
   <script>
     function zeigeNurNeue() {
       document.getElementById('nur-neue').classList.remove('ausblenden');
@@ -161,6 +171,29 @@
     function zeigeAlle() {
       document.getElementById('nur-neue').classList.add('ausblenden');
       document.getElementById('alle-artikel').classList.remove('ausblenden');
+    }
+
+    function zeigeAuswahl() {
+      const etiketten = document.querySelectorAll('.etikett');
+      etiketten.forEach(e => e.classList.add('ausgeblendet'));
+
+      document.querySelectorAll('.checkbox-auswahl:checked').forEach(cb => {
+        cb.closest('.etikett').classList.remove('ausgeblendet');
+      });
+    }
+
+    function filterEtiketten() {
+      const query = document.getElementById('suchfeld').value.toLowerCase();
+      const etiketten = document.querySelectorAll('.etikett');
+
+      etiketten.forEach(etikett => {
+        const text = etikett.innerText.toLowerCase();
+        if (text.includes(query)) {
+          etikett.classList.remove('ausgeblendet');
+        } else {
+          etikett.classList.add('ausgeblendet');
+        }
+      });
     }
   </script>
 
