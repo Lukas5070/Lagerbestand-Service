@@ -8,6 +8,7 @@
       size: A4;
       margin: 0;
     }
+
     html, body {
       margin: 0;
       padding: 0;
@@ -19,7 +20,7 @@
     .seite {
       height: 297mm;
       width: 210mm;
-      padding: 21.5mm 7mm; /* ⇦ Wichtig: leicht tiefer starten */
+      padding: 21.5mm 7mm;
       box-sizing: border-box;
       display: grid;
       grid-template-columns: repeat(2, 99.1mm);
@@ -48,25 +49,72 @@
     .noprint {
       margin: 10px;
     }
+
+    .neu-artikel {
+      margin: 20px 10px;
+      padding: 10px;
+      background: #f8f9fa;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .neu-artikel img {
+      height: 50px;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+
+    .neu-artikel h2 {
+      margin-top: 0;
+    }
+
+    .neu-eintrag {
+      margin-bottom: 10px;
+    }
+
+    .neu-eintrag small {
+      color: #666;
+      font-size: 10px;
+    }
   </style>
 </head>
 <body>
+
+  <!-- Steuerelemente oben -->
   <div class="noprint">
     <a href="/" style="padding:6px 12px; background:#007BFF; color:#fff; text-decoration:none; border-radius:5px;">⬅ Zurück</a>
     <button onclick="window.print()" style="padding:6px 12px; background:#28a745; color:#fff; border:none; border-radius:5px;">🖨️ Drucken</button>
     <p style="margin-top:10px;">Druckeinstellungen: A4 · 100 % · Keine Ränder · Hintergrundgrafiken ✅</p>
   </div>
 
-  {% for i in range(0, artikel|length, 12) %}
-  <div class="seite">
-    {% for art in artikel[i:i+12] %}
-    <div class="etikett">
-      <strong>{{ art.name }}</strong><br>
-      <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}"><br>
-      <small>{{ art.barcode_filename[:-4] }}</small>
-    </div>
-    {% endfor %}
+  <!-- Zuletzt hinzugefügte Artikel -->
+  <div class="noprint neu-artikel">
+    <h2>🆕 Zuletzt hinzugefügte Artikel</h2>
+    {% if neue_artikel %}
+      {% for art in neue_artikel %}
+        <div class="neu-eintrag">
+          <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="Barcode">
+          <strong>{{ art.name }}</strong><br>
+          <small>ID: {{ art.barcode_filename[:-4] }} | Hinzugefügt: {{ art.created_at.strftime('%d.%m.%Y %H:%M') if art.created_at else '–' }}</small>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p>Keine neuen Artikel gefunden.</p>
+    {% endif %}
   </div>
+
+  <!-- Alle Etiketten für den Druck -->
+  {% for i in range(0, artikel|length, 12) %}
+    <div class="seite">
+      {% for art in artikel[i:i+12] %}
+        <div class="etikett">
+          <strong>{{ art.name }}</strong><br>
+          <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}"><br>
+          <small>{{ art.barcode_filename[:-4] }}</small>
+        </div>
+      {% endfor %}
+    </div>
   {% endfor %}
+
 </body>
 </html>
