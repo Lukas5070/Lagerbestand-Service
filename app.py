@@ -106,9 +106,8 @@ Lagerplatz: {artikel.lagerplatz or 'nicht angegeben'}"""
 # ========= Routen =========
 @app.route('/')
 def index():
+    # Nur laden und anzeigen – keine QR-Erzeugung nötig auf der Startseite
     artikel = Artikel.query.order_by(Artikel.name.asc()).all()
-    for art in artikel:
-        ensure_barcode_image(art.barcode_filename[:-4])
     return render_template('index.html', artikel=artikel)
 
 @app.route('/add', methods=['GET', 'POST'])
