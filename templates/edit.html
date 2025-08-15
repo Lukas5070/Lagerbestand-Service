@@ -14,34 +14,25 @@
     h1{margin:0 0 8px;font-size:22px}
     .sub{margin:0 0 16px;color:#555;font-size:14px}
 
-    .grid{
-      display:grid;grid-template-columns:1fr;gap:14px;margin-top:6px
-    }
+    .grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:6px}
     .field label{display:block;margin:0 0 6px;font-weight:600}
     .field input[type="text"],
     .field input[type="number"],
-    .field input[type="url"]{
+    .field input[type="url"],
+    .field textarea{
       width:100%;padding:12px 14px;border:1px solid #cfd3dc;border-radius:10px;font-size:16px;background:#fff
     }
-    .row{
-      display:grid;grid-template-columns:1fr;gap:12px
-    }
+    .field textarea{min-height:110px;resize:vertical}
 
-    .meta{
-      display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:6px 0 14px
-    }
-    .qr{
-      display:flex;align-items:center;gap:10px;background:#f9fafc;border:1px solid var(--bd);border-radius:10px;padding:8px 10px
-    }
+    .row{display:grid;grid-template-columns:1fr;gap:12px}
+
+    .meta{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:6px 0 14px}
+    .qr{display:flex;align-items:center;gap:10px;background:#f9fafc;border:1px solid var(--bd);border-radius:10px;padding:8px 10px}
     .qr img{height:64px;width:auto;display:block}
-    .qr .id{
-      font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:#444;background:#fff;border:1px solid #e1e4eb;border-radius:6px;padding:2px 8px
-    }
+    .qr .id{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:#444;background:#fff;border:1px solid #e1e4eb;border-radius:6px;padding:2px 8px}
 
     .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
-    .btn{
-      display:inline-block;padding:12px 14px;border-radius:10px;border:0;color:#fff;text-decoration:none;font-weight:700;font-size:16px
-    }
+    .btn{display:inline-block;padding:12px 14px;border-radius:10px;border:0;color:#fff;text-decoration:none;font-weight:700;font-size:16px}
     .btn-save{background:var(--blue)}
     .btn-cancel{background:#6c757d}
     .btn-adjust{background:#198754}
@@ -52,15 +43,14 @@
       h1{font-size:24px}
       .grid{grid-template-columns:1fr 1fr}
       .row{grid-template-columns:1fr 1fr 1fr}
+      .field.note{grid-column:1 / -1}
     }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>✏️ Artikel bearbeiten</h1>
-    <p class="sub">
-      Passe die Stammdaten an. Mit „Abbrechen“ kommst du zur Übersicht **an dieselbe Stelle** zurück.
-    </p>
+    <p class="sub">Passe die Stammdaten an. „Abbrechen“ bringt dich in der Übersicht wieder genau zu diesem Artikel.</p>
 
     <div class="meta">
       <div class="qr">
@@ -88,26 +78,4 @@
           </div>
           <div class="field">
             <label for="mindestbestand">Mindestbestand</label>
-            <input id="mindestbestand" name="mindestbestand" type="number" inputmode="numeric" min="0" step="1" required value="{{ artikel.mindestbestand }}">
-          </div>
-          <div class="field">
-            <label for="lagerplatz">Lagerplatz</label>
-            <input id="lagerplatz" name="lagerplatz" type="text" value="{{ artikel.lagerplatz or '' }}" placeholder="z. B. Regal 2 Fach 7">
-          </div>
-        </div>
-
-        <div class="field" style="grid-column:1/-1">
-          <label for="bestelllink">Bestelllink (optional)</label>
-          <input id="bestelllink" name="bestelllink" type="url" value="{{ artikel.bestelllink or '' }}" placeholder="https://…">
-        </div>
-      </div>
-
-      <div class="actions">
-        <button class="btn btn-save" type="submit">💾 Speichern</button>
-        <a class="btn btn-cancel" href="{{ url_for('index') }}#art-{{ artikel.id }}">✖️ Abbrechen</a>
-      </div>
-      <div class="hint">Hinweis: Beim Speichern bleibst du in der Übersicht beim gleichen Artikel (Markierung).</div>
-    </form>
-  </div>
-</body>
-</html>
+            <input id="mindestbestand" name="mindestbestand" type="number" inputmode="numeric" min
