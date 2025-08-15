@@ -17,13 +17,10 @@
     input[type="text"],input[type="number"]{padding:6px 8px;border:1px solid #ccc;border-radius:4px}
     .hint{margin:6px 2px 0;color:#555}
 
-    .neu-panel{margin:10px;padding:10px;background:#f8f9fa;border:1px solid #ddd;border-radius:5px}
-    .neu-e{margin-bottom:6px}
-    .neu-e img{height:38px;vertical-align:middle;margin-right:8px}
-
     .list{padding:10px}
-    .item{display:flex;align-items:center;gap:10px;border-bottom:1px solid #eee;padding:8px 0}
-    .chk{transform:scale(1.2)}
+    .item{display:flex;align-items:center;gap:10px;border-bottom:1px solid #eee;padding:8px 0;cursor:pointer}
+    .item .clickarea{display:flex;align-items:center;gap:10px;flex:1}
+    .chk{transform:scale(1.2);margin-right:4px}
     .prev{width:40px;height:40px;border:1px solid #ddd;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#fff;overflow:hidden}
     .prev img{max-width:100%;max-height:100%;display:block}
     .name{font-weight:700}
@@ -31,8 +28,7 @@
     .hidden{display:none!important}
 
     @media print{
-      .top,.neu-panel,.list{display:none!important}
-      /* Das Pop-up übernimmt den Druck; dieser Body druckt nichts */
+      .top,.list{display:none!important}
     }
   </style>
   <noscript>
@@ -48,7 +44,8 @@
       <a class="btn btn-blue" href="/">⬅ Zurück</a>
 
       <input id="q" type="text" placeholder="🔍 Suche: Name, ID, Lagerplatz …">
-      <button class="btn btn-teal" id="btnNeu">🆕 Nur neue</button>
+
+      <button class="btn btn-teal" id="btnTop">🆕 Neueste 15</button>
       <button class="btn btn-grey" id="btnAlle">📦 Alle</button>
 
       <button class="btn btn-grey" id="btnSelAll">☑️ Sichtbare auswählen</button>
@@ -58,73 +55,57 @@
       <input id="copies" type="number" min="1" value="1" style="width:74px">
 
       <button class="btn btn-amber" id="btnPrintSel">✅ Nur Auswahl drucken</button>
-      <button class="btn btn-green" id="btnPrintAll">🖨️ Jetzt drucken</button>
+      <button class="btn btn-green" id="btnPrintTop">🖨️ Neueste 15 drucken</button>
+      <button class="btn btn-green" id="btnPrintAll">🖨️ Jetzt drucken (sichtbar)</button>
     </div>
-    <p class="hint">Druckeinstellungen (im Pop-up): A4 · 100 % · Keine Ränder · Hintergrundgrafiken ✅</p>
+    <p class="hint">Druck im Pop-up: A4 · 100 % · Keine Ränder · Hintergrundgrafiken ✅</p>
   </div>
 
-  <!-- Zuletzt hinzugefügt -->
-  <div class="neu-panel" id="panelNeu">
-    <strong>🆕 Zuletzt hinzugefügt</strong>
-    <div>
-      {% if neue_artikel %}
-        {% for art in neue_artikel %}
-          <div class="neu-e">
+  <!-- Liste: NEUESTE 15 -->
+  <div id="listTop" class="list">
+    {% for art in (neue_artikel[:15] if neue_artikel is not none else []) %}
+      <div class="item"
+           data-name="{{ (art.name or '')|lower }}"
+           data-id="{{ art.barcode_filename[:-4]|lower }}"
+           data-lagerplatz="{{ (art.lagerplatz or '')|lower }}">
+        <input class="chk" type="checkbox">
+        <div class="clickarea">
+          <div class="prev">
             <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="QR">
-            <strong>{{ art.name }}</strong>
-            <small>
-              &nbsp;| ID: {{ art.barcode_filename[:-4] }} |
-              Hinzugefügt:
-              {% if art.created_at and art.created_at.strftime %}
-                {{ art.created_at.strftime('%d.%m.%Y %H:%M') }}
-              {% else %}–{% endif %}
-            </small>
           </div>
-        {% endfor %}
-      {% else %}
-        <em>Keine neuen Artikel gefunden.</em>
-      {% endif %}
-    </div>
+          <div>
+            <div class="name">{{ art.name }}</div>
+            <div class="meta">
+              ID: {{ art.barcode_filename[:-4] }}
+              {% if art.lagerplatz %} · Lagerplatz: {{ art.lagerplatz }}{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+    {% if not neue_artikel %}
+      <em>Keine neu hinzugefügten Artikel gefunden.</em>
+    {% endif %}
   </div>
 
-  <!-- Alle Artikel (Bildschirmliste) -->
-  <div id="listAlle" class="list">
+  <!-- Liste: ALLE -->
+  <div id="listAlle" class="list hidden">
     {% for art in artikel %}
       <div class="item"
            data-name="{{ (art.name or '')|lower }}"
            data-id="{{ art.barcode_filename[:-4]|lower }}"
            data-lagerplatz="{{ (art.lagerplatz or '')|lower }}">
         <input class="chk" type="checkbox">
-        <div class="prev">
-          <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="QR">
-        </div>
-        <div>
-          <div class="name">{{ art.name }}</div>
-          <div class="meta">
-            ID: {{ art.barcode_filename[:-4] }}
-            {% if art.lagerplatz %} · Lagerplatz: {{ art.lagerplatz }}{% endif %}
+        <div class="clickarea">
+          <div class="prev">
+            <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="QR">
           </div>
-        </div>
-      </div>
-    {% endfor %}
-  </div>
-
-  <!-- Nur neue (Bildschirmliste) -->
-  <div id="listNeu" class="list hidden">
-    {% for art in neue_artikel %}
-      <div class="item"
-           data-name="{{ (art.name or '')|lower }}"
-           data-id="{{ art.barcode_filename[:-4]|lower }}"
-           data-lagerplatz="{{ (art.lagerplatz or '')|lower }}">
-        <input class="chk" type="checkbox">
-        <div class="prev">
-          <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="QR">
-        </div>
-        <div>
-          <div class="name">{{ art.name }}</div>
-          <div class="meta">
-            ID: {{ art.barcode_filename[:-4] }}
-            {% if art.lagerplatz %} · Lagerplatz: {{ art.lagerplatz }}{% endif %}
+          <div>
+            <div class="name">{{ art.name }}</div>
+            <div class="meta">
+              ID: {{ art.barcode_filename[:-4] }}
+              {% if art.lagerplatz %} · Lagerplatz: {{ art.lagerplatz }}{% endif %}
+            </div>
           </div>
         </div>
       </div>
@@ -133,17 +114,20 @@
 
   <script>
     (function(){
-      // Elemente
       var q = document.getElementById('q');
+      var listTop  = document.getElementById('listTop');
       var listAlle = document.getElementById('listAlle');
-      var listNeu  = document.getElementById('listNeu');
-      var panelNeu = document.getElementById('panelNeu');
+      var mode = 'top'; // 'top' | 'alle'  -> Start mit neuesten 15
 
-      // Modus
-      var mode = 'alle'; // 'alle' | 'neu'
+      function currentList(){ return mode === 'top' ? listTop : listAlle; }
 
-      // Helfer
-      function currentList(){ return mode === 'neu' ? listNeu : listAlle; }
+      function setMode(m){
+        mode = m;
+        listTop.classList.toggle('hidden', m !== 'top');
+        listAlle.classList.toggle('hidden', m !== 'alle');
+        applyFilter();
+        window.scrollTo(0,0);
+      }
 
       function applyFilter(){
         var query = (q.value || '').toLowerCase().trim();
@@ -153,18 +137,9 @@
           var n = it.getAttribute('data-name') || '';
           var id = it.getAttribute('data-id') || '';
           var lp = it.getAttribute('data-lagerplatz') || '';
-          var show = !query || n.indexOf(query) !== -1 || id.indexOf(query) !== -1 || lp.indexOf(query) !== -1;
+          var show = !query || n.indexOf(query)!==-1 || id.indexOf(query)!==-1 || lp.indexOf(query)!==-1;
           it.style.display = show ? '' : 'none';
         }
-      }
-
-      function setMode(m){
-        mode = m;
-        listAlle.classList.toggle('hidden', m !== 'alle');
-        listNeu.classList.toggle('hidden', m !== 'neu');
-        panelNeu.style.display = (m === 'neu') ? '' : '';
-        applyFilter();
-        window.scrollTo(0,0);
       }
 
       function selectVisible(flag){
@@ -177,9 +152,8 @@
         }
       }
 
-      function collectRows(onlySelected){
-        var list = currentList();
-        var items = list.querySelectorAll('.item');
+      function collectRows(listEl, onlySelected){
+        var items = listEl.querySelectorAll('.item');
         var rows = [];
         var copies = parseInt(document.getElementById('copies').value,10);
         if (isNaN(copies) || copies < 1) copies = 1;
@@ -206,9 +180,7 @@
         if (!rows.length){ alert('Keine Etiketten zum Drucken.'); return; }
         var w = window.open('', '_blank');
         var html = [];
-        html.push('<!DOCTYPE html><html><head><meta charset="utf-8">');
-        html.push('<title>Druck</title>');
-        // Avery-Raster
+        html.push('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Druck</title>');
         html.push('<style>@page{size:A4;margin:0;}body{margin:0;font-family:Arial,sans-serif;font-size:12px;}');
         html.push('.seite{height:297mm;width:210mm;padding:21.5mm 7mm;box-sizing:border-box;display:grid;grid-template-columns:repeat(2,99.1mm);grid-template-rows:repeat(6,42.3mm);gap:0mm 2.5mm;page-break-after:always;}');
         html.push('.etikett{box-sizing:border-box;padding:3mm 2mm;text-align:center;overflow:hidden;}');
@@ -230,35 +202,50 @@
           }
           html.push('</div>');
         }
-
         html.push('</body></html>');
         w.document.open(); w.document.write(html.join('')); w.document.close();
-        // wichtig: kleinen Timeout, damit Bilder laden
         setTimeout(function(){ w.print(); }, 300);
       }
 
       function esc(s){
         if (!s) return '';
-        return String(s)
-          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-          .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                        .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
       }
 
-      // Events binden (kein inline JS nötig)
-      document.getElementById('btnNeu').addEventListener('click', function(){ setMode('neu'); });
+      // Zeile klickbar → Checkbox toggeln
+      function attachRowToggle(listEl){
+        listEl.addEventListener('click', function(e){
+          var row = e.target.closest ? e.target.closest('.item') : null;
+          if (!row) return;
+          var isCheckbox = e.target.className && String(e.target.className).indexOf('chk') !== -1;
+          if (isCheckbox) return;
+          var cb = row.querySelector('.chk');
+          if (cb){ cb.checked = !cb.checked; }
+        });
+      }
+      attachRowToggle(listTop);
+      attachRowToggle(listAlle);
+
+      // Buttons / Events
+      document.getElementById('btnTop').addEventListener('click', function(){ setMode('top'); });
       document.getElementById('btnAlle').addEventListener('click', function(){ setMode('alle'); });
       document.getElementById('btnSelAll').addEventListener('click', function(){ selectVisible(true); });
       document.getElementById('btnSelNone').addEventListener('click', function(){ selectVisible(false); });
       document.getElementById('btnPrintSel').addEventListener('click', function(){
-        openPrintWindow(collectRows(true));
+        openPrintWindow(collectRows(currentList(), true));
       });
       document.getElementById('btnPrintAll').addEventListener('click', function(){
-        openPrintWindow(collectRows(false));
+        openPrintWindow(collectRows(currentList(), false));
+      });
+      document.getElementById('btnPrintTop').addEventListener('click', function(){
+        // druckt immer die neuesten 15 (ohne Auswahlzwang)
+        openPrintWindow(collectRows(listTop, false));
       });
       q.addEventListener('input', applyFilter);
 
-      // Initial
-      setMode('alle');
+      // Initial: Neueste 15 aktiv + Filter ausführen
+      setMode('top');
     })();
   </script>
 </body>
