@@ -30,65 +30,71 @@ db = SQLAlchemy(app)
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['PRODUCT_IMG_FOLDER'], exist_ok=True)
 
-# 🔧 Spalte "lagerplatz"
-with app.app_context():
+# ========== DB-Migrations-Helper: funktioniert für PostgreSQL & SQLite ==========
+def ensure_column(table: str, column: str, ddl_pg: str, ddl_sqlite: str):
+    """
+    Lege eine Spalte an, falls sie noch nicht existiert.
+    - ddl_pg: vollständiges "colname TYPE DEFAULT ..." für Postgres
+    - ddl_sqlite: vollständiges "colname TYPE DEFAULT ..." für SQLite
+    """
+    dialect = db.session.bind.dialect.name
     try:
-        db.session.execute(text("ALTER TABLE artikel ADD COLUMN IF NOT EXISTS lagerplatz VARCHAR(100);"))
+        if dialect == "postgresql":
+            db.session.execute(text(f"""
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name='{table}' AND column_name='{column}'
+                    ) THEN
+                        ALTER TABLE {table} ADD COLUMN {ddl_pg};
+                    END IF;
+                END;
+                $$;
+            """))
+        else:
+            # SQLite: Spaltenliste prüfen, dann ALTER TABLE ohne IF NOT EXISTS
+            cols = db.session.execute(text(f"PRAGMA table_info({table})")).fetchall()
+            names = [row[1] for row in cols]  # 0:cid, 1:name, ...
+            if column not in names:
+                db.session.execute(text(f"ALTER TABLE {table} ADD COLUMN {ddl_sqlite};"))
         db.session.commit()
-        print("✅ Spalte 'lagerplatz' vorhanden oder hinzugefügt.")
+        print(f"✅ Spalte '{column}' vorhanden oder hinzugefügt.")
     except Exception as e:
-        print("⚠️ Fehler bei 'lagerplatz':", e)
+        db.session.rollback()
+        print(f"⚠️ Fehler beim Hinzufügen der Spalte '{column}':", e)
 
-# 🔧 Spalte "bestelllink"
 with app.app_context():
-    try:
-        db.session.execute(text("ALTER TABLE artikel ADD COLUMN IF NOT EXISTS bestelllink VARCHAR(300);"))
-        db.session.commit()
-        print("✅ Spalte 'bestelllink' vorhanden oder hinzugefügt.")
-    except Exception as e:
-        print("⚠️ Fehler bei 'bestelllink':", e)
+    # lagerplatz
+    ensure_column(
+        table="artikel",
+        column="lagerplatz",
+        ddl_pg="lagerplatz VARCHAR(100)",
+        ddl_sqlite="lagerplatz VARCHAR(100)"
+    )
+    # bestelllink
+    ensure_column(
+        table="artikel",
+        column="bestelllink",
+        ddl_pg="bestelllink VARCHAR(300)",
+        ddl_sqlite="bestelllink VARCHAR(300)"
+    )
+    # created_at
+    ensure_column(
+        table="artikel",
+        column="created_at",
+        ddl_pg="created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+        ddl_sqlite="created_at DATETIME DEFAULT (CURRENT_TIMESTAMP)"
+    )
+    # image_filename
+    ensure_column(
+        table="artikel",
+        column="image_filename",
+        ddl_pg="image_filename VARCHAR(200)",
+        ddl_sqlite="image_filename VARCHAR(200)"
+    )
 
-# 🔧 Spalte "created_at" (PostgreSQL-kompatibel)
-with app.app_context():
-    try:
-        db.session.execute(text("""
-            DO $$
-            BEGIN
-                IF NOT EXISTS (
-                    SELECT 1 FROM information_schema.columns 
-                    WHERE table_name='artikel' AND column_name='created_at'
-                ) THEN
-                    ALTER TABLE artikel ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-                END IF;
-            END;
-            $$;
-        """))
-        db.session.commit()
-        print("✅ Spalte 'created_at' vorhanden oder hinzugefügt.")
-    except Exception as e:
-        print("⚠️ Fehler bei 'created_at':", e)
-
-# 🔧 Spalte "image_filename" (lokaler Cache des Händlerbilds)
-with app.app_context():
-    try:
-        db.session.execute(text("""
-            DO $$
-            BEGIN
-                IF NOT EXISTS (
-                    SELECT 1 FROM information_schema.columns 
-                    WHERE table_name='artikel' AND column_name='image_filename'
-                ) THEN
-                    ALTER TABLE artikel ADD COLUMN image_filename VARCHAR(200);
-                END IF;
-            END;
-            $$;
-        """))
-        db.session.commit()
-        print("✅ Spalte 'image_filename' vorhanden oder hinzugefügt.")
-    except Exception as e:
-        print("⚠️ Fehler bei 'image_filename':", e)
-
-# 🔧 QR-Code erzeugen, falls nicht vorhanden
+# ========== QR-Code erzeugen ==========
 def ensure_barcode_image(barcode_id):
     path = os.path.join(app.config['UPLOAD_FOLDER'], f"{barcode_id}.png")
     if not os.path.exists(path):
@@ -103,7 +109,7 @@ def ensure_barcode_image(barcode_id):
         img = qr.make_image(fill_color="black", back_color="white")
         img.save(path)
 
-# 🔧 E-Mail bei Mindestbestand senden
+# ========== Mail bei Mindestbestand ==========
 def sende_warnung(artikel):
     if artikel.bestand == artikel.mindestbestand:
         nachricht = f"""Achtung: Der Artikel "{artikel.name}" hat den Mindestbestand erreicht!
@@ -124,7 +130,7 @@ Lagerplatz: {artikel.lagerplatz or 'nicht angegeben'}"""
         except Exception as e:
             print("Fehler beim E-Mail-Versand:", e)
 
-# 🔧 Datenmodell
+# ========== Datenmodell ==========
 class Artikel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -137,7 +143,6 @@ class Artikel(db.Model):
     image_filename = db.Column(db.String(200), nullable=True)  # lokal gespeichertes Bild
 
 # ========== 🔍 Produktbild-Ermittlung & Cache ==========
-
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                   "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -181,7 +186,6 @@ def _pick_image_url(html: str, page_url: str) -> str | None:
         src = (img.get("src") or "").strip()
         if not src:
             continue
-        # kleine Heuristik um Logos/Icons zu vermeiden
         low = src.lower()
         if any(x in low for x in ["logo", "icon", "sprite", "placeholder", "spinner"]):
             continue
@@ -247,16 +251,13 @@ def fetch_and_cache_product_image(artikel: Artikel) -> bool:
 def ensure_product_image_cached(artikel: Artikel):
     """Stellt sicher, dass ein lokales Produktbild existiert – versucht einmalig zu laden."""
     if artikel.image_filename:
-        # Datei existiert evtl. nicht mehr – prüfen:
         path = os.path.join(app.config['PRODUCT_IMG_FOLDER'], artikel.image_filename)
         if os.path.exists(path):
             return
-    # sonst versuchen zu holen
     fetch_and_cache_product_image(artikel)
 
-# ========== /Bild-Caching Ende ==========
-
-# 🔧 Startseite
+# ========== Routen ==========
+# Startseite
 @app.route('/')
 def index():
     artikel = Artikel.query.order_by(Artikel.name.asc()).all()
@@ -266,14 +267,13 @@ def index():
         barcode_id = art.barcode_filename[:-4]
         ensure_barcode_image(barcode_id)
 
-    # Optional: Für die ersten N Artikel Bildcache anstoßen (um Laden nicht zu blockieren)
-    # Du kannst N erhöhen, wenn es schnell genug ist.
+    # Optional: Für die ersten N Artikel Bildcache anstoßen (keine harte Blockade dank Timeouts)
     for art in artikel[:20]:
         ensure_product_image_cached(art)
 
     return render_template('index.html', artikel=artikel)
 
-# 🔧 Artikel hinzufügen
+# Artikel hinzufügen
 @app.route('/add', methods=['GET', 'POST'])
 def add():
     if request.method == 'POST':
@@ -298,7 +298,7 @@ def add():
         db.session.add(artikel)
         db.session.commit()  # ID nötig für Dateiname
 
-        # nach dem Anlegen direkt versuchen, Produktbild zu holen (non-blocking genug durch timeouts)
+        # nach dem Anlegen direkt versuchen, Produktbild zu holen (timeouts begrenzen Block)
         try:
             fetch_and_cache_product_image(artikel)
         except Exception as e:
@@ -307,7 +307,7 @@ def add():
         return redirect(url_for('index'))
     return render_template('add.html')
 
-# 🔧 Artikel bearbeiten
+# Artikel bearbeiten
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
 def edit(id):
     artikel = Artikel.query.get_or_404(id)
@@ -330,7 +330,7 @@ def edit(id):
         return redirect(url_for('index'))
     return render_template('edit.html', artikel=artikel)
 
-# 🔧 Bestand anpassen
+# Bestand anpassen
 @app.route('/update/<int:id>', methods=['GET', 'POST'])
 def update(id):
     artikel = Artikel.query.get_or_404(id)
@@ -342,7 +342,7 @@ def update(id):
         return redirect(url_for('index'))
     return render_template('update.html', artikel=artikel)
 
-# 🔧 Artikel löschen
+# Artikel löschen
 @app.route('/delete/<int:id>', methods=['POST'])
 def delete(id):
     artikel = Artikel.query.get_or_404(id)
@@ -358,12 +358,12 @@ def delete(id):
     db.session.commit()
     return redirect(url_for('index'))
 
-# 🔧 Scan-Seite
+# Scan-Seite
 @app.route('/scan')
 def scan():
     return render_template('scan.html')
 
-# 🔧 Barcode-Anpassung
+# Barcode-Anpassung
 @app.route('/adjust_barcode/<barcode_id>', methods=['GET', 'POST'])
 def adjust_barcode(barcode_id):
     artikel = Artikel.query.filter(Artikel.barcode_filename == f"{barcode_id}.png").first()
@@ -381,13 +381,13 @@ def adjust_barcode(barcode_id):
         return redirect(url_for('index'))
     return render_template('adjust.html', artikel=artikel)
 
-# 🔧 Etiketten anzeigen mit Filter „neu“ & Suchfunktion
+# Etiketten anzeigen mit Filter „neu“ & Suchfunktion
 @app.route('/barcodes')
 def barcodes():
     query = request.args.get("q", "").strip().lower()
     alle_artikel = Artikel.query.order_by(Artikel.name.asc()).all()
 
-    # optional: Bildcache für sichtbare Artikel anstoßen (kleines Kontingent)
+    # Bildcache (kleines Kontingent) vorsichtig anschieben
     for art in alle_artikel[:20]:
         ensure_product_image_cached(art)
 
@@ -396,8 +396,14 @@ def barcodes():
     else:
         gefiltert = alle_artikel
 
+    # „Neue Artikel“: letzte 7 Tage (funktioniert auch in SQLite dank ensure_column)
     eine_woche = datetime.utcnow() - timedelta(days=7)
-    neue_artikel = Artikel.query.filter(Artikel.created_at >= eine_woche).order_by(Artikel.created_at.desc()).all()
+    try:
+        neue_artikel = Artikel.query.filter(Artikel.created_at >= eine_woche)\
+                                    .order_by(Artikel.created_at.desc()).all()
+    except Exception:
+        # Fallback, falls alte DB ohne Spalte (sehr unwahrscheinlich, da ensure_column)
+        neue_artikel = Artikel.query.order_by(Artikel.id.desc()).limit(5).all()
 
     # QR sicherstellen
     for art in gefiltert:
@@ -406,7 +412,7 @@ def barcodes():
 
     return render_template('barcodes.html', artikel=gefiltert, neue_artikel=neue_artikel, suchbegriff=query)
 
-# 🔧 Starten
+# Starten
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
