@@ -108,7 +108,6 @@ Lagerplatz: {artikel.lagerplatz or 'nicht angegeben'}"""
 # ========= Routen =========
 @app.route('/')
 def index():
-    # Übersicht ohne QR-Erzeugung (schneller)
     artikel = Artikel.query.order_by(Artikel.name.asc()).all()
     return render_template('index.html', artikel=artikel)
 
@@ -196,32 +195,64 @@ def adjust_barcode(barcode_id):
         return redirect(url_for('index') + f"#art-{artikel.id}")
     return render_template('adjust.html', artikel=artikel)
 
-# Etiketten-Seite
+# Etiketten-Seite mit Suche + Datumsfilter für „neu“
 @app.route('/barcodes')
 def barcodes():
-    query = request.args.get("q", "").strip().lower()
+    q = (request.args.get("q", "") or "").strip().lower()
+    date_from = (request.args.get("from", "") or "").strip()
+    date_to   = (request.args.get("to", "") or "").strip()
+
+    # Alle Artikel (für „Alle drucken“ + Suche)
     alle = Artikel.query.order_by(Artikel.name.asc()).all()
-
-    # „Neueste“: letzten 7 Tage (Fallback: jüngste 15 per ID)
-    eine_woche = datetime.utcnow() - timedelta(days=7)
-    try:
-        neue = Artikel.query.filter(Artikel.created_at >= eine_woche)\
-                            .order_by(Artikel.created_at.desc()).all()
-        if not neue:
-            neue = Artikel.query.order_by(Artikel.id.desc()).limit(15).all()
-    except Exception:
-        neue = Artikel.query.order_by(Artikel.id.desc()).limit(15).all()
-
-    # optionale serverseitige Suche
-    if query:
-        gefiltert = [a for a in alle if query in a.name.lower()]
+    if q:
+        artikel = [a for a in alle if q in (a.name or "").lower()]
     else:
-        gefiltert = alle
+        artikel = alle
 
-    for art in gefiltert:
+    # Neue Artikel nach Datum filtern (inklusive)
+    neue_q = Artikel.query
+    dt_from = None
+    dt_to = None
+    if date_from:
+        try:
+            dt_from = datetime.strptime(date_from, "%Y-%m-%d")
+            neue_q = neue_q.filter(Artikel.created_at >= dt_from)
+        except Exception:
+            dt_from = None
+    if date_to:
+        try:
+            dt_to = datetime.strptime(date_to, "%Y-%m-%d") + timedelta(days=1) - timedelta(seconds=1)
+            neue_q = neue_q.filter(Artikel.created_at <= dt_to)
+        except Exception:
+            dt_to = None
+
+    if dt_from or dt_to:
+        neue_artikel = neue_q.order_by(Artikel.created_at.desc(), Artikel.id.desc()).all()
+    else:
+        # Fallback: letzte 7 Tage oder jüngste 15
+        eine_woche = datetime.utcnow() - timedelta(days=7)
+        try:
+            neue_artikel = Artikel.query.filter(Artikel.created_at >= eine_woche)\
+                                        .order_by(Artikel.created_at.desc()).all()
+            if not neue_artikel:
+                neue_artikel = Artikel.query.order_by(Artikel.id.desc()).limit(15).all()
+        except Exception:
+            neue_artikel = Artikel.query.order_by(Artikel.id.desc()).limit(15).all()
+
+    # QR-Bilder sicherstellen (nur wenn fehlen → erzeugt)
+    for art in artikel:
+        ensure_barcode_image(art.barcode_filename[:-4])
+    for art in neue_artikel:
         ensure_barcode_image(art.barcode_filename[:-4])
 
-    return render_template('barcodes.html', artikel=gefiltert, neue_artikel=neue, suchbegriff=query)
+    return render_template(
+        'barcodes.html',
+        artikel=artikel,
+        neue_artikel=neue_artikel,
+        suchbegriff=q,
+        date_from=date_from,
+        date_to=date_to
+    )
 
 # ========= CSV-Export =========
 @app.route('/export.csv')
@@ -233,11 +264,6 @@ def export_csv():
       - sep=comma|semicolon|,|;      (Standard: semicolon)
       - encoding=utf-8|cp1252        (Standard: utf-8)
       - bom=0|1                      (Standard: 1 nur bei utf-8 → Excel-kompatibel)
-
-    Beispiele:
-      /export.csv
-      /export.csv?sep=semicolon&encoding=utf-8&bom=1
-      /export.csv?sep=comma&encoding=cp1252
     """
     sep = (request.args.get("sep", "semicolon") or "semicolon").lower()
     delimiter = ';' if sep in ("semicolon", ";", "sc") else ','
