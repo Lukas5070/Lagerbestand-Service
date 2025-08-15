@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, Response
 from flask_sqlalchemy import SQLAlchemy
 import os
 import uuid
@@ -7,6 +7,8 @@ import smtplib
 from email.mime.text import MIMEText
 from sqlalchemy import text
 from datetime import datetime, timedelta
+import csv
+from io import StringIO
 
 # 🔧 Mailkonfiguration
 ABSENDER_EMAIL = "lager.servicefrick@gmail.com"
@@ -39,7 +41,7 @@ class Artikel(db.Model):
 
 # ========= DB-Spalten sicher anlegen (PG & SQLite) =========
 def ensure_column(table: str, column: str, ddl_pg: str, ddl_sqlite: str):
-    """Fügt eine Spalte hinzu, falls sie fehlt. Kompatibel mit PostgreSQL & SQLite."""
+    """Spalte hinzufügen, falls sie fehlt (PostgreSQL & SQLite)."""
     dialect = db.engine.dialect.name
     try:
         if dialect == "postgresql":
@@ -106,7 +108,7 @@ Lagerplatz: {artikel.lagerplatz or 'nicht angegeben'}"""
 # ========= Routen =========
 @app.route('/')
 def index():
-    # Nur laden und anzeigen – keine QR-Erzeugung nötig auf der Startseite
+    # Übersicht ohne QR-Erzeugung (schneller)
     artikel = Artikel.query.order_by(Artikel.name.asc()).all()
     return render_template('index.html', artikel=artikel)
 
@@ -145,7 +147,6 @@ def edit(id):
         artikel.lagerplatz = request.form.get('lagerplatz', '')
         artikel.bestelllink = request.form.get('bestelllink', '')
         db.session.commit()
-        # ⬅️ Zur passenden Zeile zurückscrollen
         return redirect(url_for('index') + f"#art-{artikel.id}")
     return render_template('edit.html', artikel=artikel)
 
@@ -163,7 +164,7 @@ def update(id):
 @app.route('/delete/<int:id>', methods=['POST'])
 def delete(id):
     artikel = Artikel.query.get_or_404(id)
-    # Optional: QR-Datei löschen (spart Speicher)
+    # Optional: QR-Datei gleich entfernen
     try:
         pfad = os.path.join(app.config['UPLOAD_FOLDER'], artikel.barcode_filename)
         if os.path.exists(pfad):
@@ -172,7 +173,6 @@ def delete(id):
         pass
     db.session.delete(artikel)
     db.session.commit()
-    # Nach dem Löschen gibt es die Zeile nicht mehr – zurück zum Anfang
     return redirect(url_for('index'))
 
 @app.route('/scan')
@@ -223,6 +223,67 @@ def barcodes():
 
     return render_template('barcodes.html', artikel=gefiltert, neue_artikel=neue, suchbegriff=query)
 
+# ========= CSV-Export =========
+@app.route('/export.csv')
+def export_csv():
+    """
+    Exportiert alle Artikel als CSV.
+
+    Query-Parameter (optional):
+      - sep=comma|semicolon|,|;      (Standard: semicolon)
+      - encoding=utf-8|cp1252        (Standard: utf-8)
+      - bom=0|1                      (Standard: 1 nur bei utf-8 → Excel-kompatibel)
+
+    Beispiele:
+      /export.csv
+      /export.csv?sep=semicolon&encoding=utf-8&bom=1
+      /export.csv?sep=comma&encoding=cp1252
+    """
+    sep = (request.args.get("sep", "semicolon") or "semicolon").lower()
+    delimiter = ';' if sep in ("semicolon", ";", "sc") else ','
+
+    encoding = (request.args.get("encoding", "utf-8") or "utf-8").lower()
+    add_bom = (request.args.get("bom", "1") in ("1", "true", "yes")) if encoding.startswith("utf") else False
+
+    cols = [
+        ("id",              lambda a: a.id),
+        ("name",            lambda a: a.name or ""),
+        ("bestand",         lambda a: a.bestand),
+        ("mindestbestand",  lambda a: a.mindestbestand),
+        ("lagerplatz",      lambda a: a.lagerplatz or ""),
+        ("bestelllink",     lambda a: a.bestelllink or ""),
+        ("barcode_id",      lambda a: (a.barcode_filename[:-4] if a.barcode_filename else "")),
+        ("barcode_filename",lambda a: a.barcode_filename or ""),
+        ("created_at",      lambda a: a.created_at.strftime("%Y-%m-%d %H:%M:%S") if a.created_at else ""),
+    ]
+
+    artikel = Artikel.query.order_by(Artikel.name.asc()).all()
+
+    # In-Memory CSV schreiben
+    sio = StringIO()
+    writer = csv.writer(sio, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
+    writer.writerow([c[0] for c in cols])
+    for a in artikel:
+        writer.writerow([fn(a) for _, fn in cols])
+
+    data = sio.getvalue()
+    if encoding == "cp1252":
+        payload = data.encode("cp1252", errors="replace")
+        content_type = "text/csv; charset=windows-1252"
+    else:
+        if add_bom:
+            data = '\ufeff' + data
+        payload = data.encode("utf-8")
+        content_type = "text/csv; charset=utf-8"
+
+    headers = {
+        "Content-Disposition": "attachment; filename=artikel_export.csv",
+        "Content-Type": content_type,
+        "Cache-Control": "no-store",
+    }
+    return Response(payload, headers=headers)
+
+# ========= Start =========
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
