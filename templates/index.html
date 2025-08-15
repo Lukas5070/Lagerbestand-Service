@@ -16,23 +16,25 @@
     .top-links a{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:6px;background:#fff;border:1px solid var(--bd);text-decoration:none;color:var(--blue);font-weight:600}
     .controls{margin:0 24px 16px 24px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .controls input[type="text"], .controls select{padding:10px;border:1px solid #ccc;border-radius:6px;background:#fff}
+
     .tablewrap{margin:0 24px 24px 24px;background:var(--card);border:1px solid var(--bd);border-radius:8px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.05)}
     table{width:100%;border-collapse:collapse}
     th,td{padding:12px;border-bottom:1px solid #eee;text-align:center;vertical-align:middle}
     thead th{background:var(--blue);color:#fff;cursor:pointer;user-select:none}
     thead th.nosort{cursor:default}
     thead th.asc::after{content:" ▲";} thead th.desc::after{content:" ▼";}
+
     .inline-form{display:inline}
     .btn{display:inline-block;padding:6px 10px;border-radius:4px;color:#fff;text-decoration:none;margin:2px;font-size:.9em}
     .btn-edit{background:var(--green)}
     .btn-delete{background:var(--red)}
     .btn-order{background:#17a2b8}
+
     .status-green{color:var(--green);font-weight:700}
     .status-yellow{color:#c58a00;font-weight:700}
     .status-red{color:var(--red);font-weight:700}
-    .thumb{width:70px;height:70px;border:1px solid #ddd;border-radius:6px;overflow:hidden;background:#fff;display:inline-flex;align-items:center;justify-content:center}
-    .thumb img{max-width:100%;max-height:100%;display:block}
-    .qrid{font-size:11px;color:#666;margin-top:4px}
+
+    code.badge{background:#f3f3f3;border:1px solid #ddd;border-radius:4px;padding:2px 6px}
   </style>
 
   <script>
@@ -46,25 +48,107 @@
         var lp   = r.getAttribute("data-lagerplatz") || "";
         var id   = r.getAttribute("data-id") || "";
         var status = r.getAttribute("data-status") || "";
-        var matchesSearch = !q || name.indexOf(q)!==-1 || lp.indexOf(q)!==-1 || id.indexOf(q)!==-1;
-        var matchesFilter = (filterValue==="alle") || (status===filterValue);
-        r.style.display = (matchesSearch && matchesFilter) ? "" : "none";
+        var okQ = !q || name.indexOf(q)>-1 || lp.indexOf(q)>-1 || id.indexOf(q)>-1;
+        var okF = (filterValue==="alle") || (status===filterValue);
+        r.style.display = (okQ && okF) ? "" : "none";
       }
     }
+
     function sortTable(colIndex){
       var tbody = document.querySelector("tbody");
       var rows = Array.prototype.slice.call(tbody.rows);
       var headers = document.querySelectorAll("thead th");
       var header = headers[colIndex];
       if (header.classList.contains("nosort")) return;
+
       var isAsc = header.classList.contains("asc");
       for (var h=0;h<headers.length;h++){ headers[h].classList.remove("asc","desc"); }
+
       rows.sort(function(a,b){
         var A = (a.cells[colIndex].innerText || "").trim().toLowerCase();
         var B = (b.cells[colIndex].innerText || "").trim().toLowerCase();
         var nA = parseFloat(A.replace(",", ".")); var nB = parseFloat(B.replace(",", "."));
         if (!isNaN(nA) && !isNaN(nB)) return isAsc ? (nA-nB) : (nB-nA);
         return isAsc ? A.localeCompare(B) : B.localeCompare(A);
+      });
+
+      for (var i=0;i<rows.length;i++){ tbody.appendChild(rows[i]); }
+      header.classList.toggle("asc", !isAsc);
+      header.classList.toggle("desc", isAsc);
+    }
+  </script>
+</head>
+<body>
+  <h1>📦 Lagerbestand</h1>
+
+  <div class="top-links">
+    <a href="/add">➕ Artikel hinzufügen</a>
+    <a href="/barcodes">🏷️ Barcodes drucken</a>
+    <a href="/scan">📷 Barcode scannen</a>
+  </div>
+
+  <div class="controls">
+    🔍 <input type="text" id="searchInput" oninput="searchTable()" placeholder="Artikel, Lagerplatz oder Barcode-ID suchen…">
+    📊 <label for="statusFilter">Filter:</label>
+    <select id="statusFilter" onchange="searchTable()">
+      <option value="alle">Alle</option>
+      <option value="kritisch">Nur kritische</option>
+      <option value="knapp">Nur knappe</option>
+    </select>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th onclick="sortTable(0)">Name</th>
+          <th onclick="sortTable(1)">Bestand</th>
+          <th onclick="sortTable(2)">Mindestbestand</th>
+          <th class="nosort">Status</th>
+          <th onclick="sortTable(4)">Lagerplatz</th>
+          <th onclick="sortTable(5)">Barcode-ID</th>
+          <th class="nosort">Aktionen</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for art in artikel %}
+          {% set id_plain = art.barcode_filename[:-4] %}
+          {% set status_txt = 'kritisch' if art.bestand < art.mindestbestand else ('knapp' if art.bestand == art.mindestbestand else 'ausreichend') %}
+          <tr
+            data-name="{{ (art.name or '')|lower }}"
+            data-lagerplatz="{{ (art.lagerplatz or '')|lower }}"
+            data-id="{{ id_plain|lower }}"
+            data-status="{{ status_txt }}">
+            <td>{{ art.name }}</td>
+            <td>{{ art.bestand }}</td>
+            <td>{{ art.mindestbestand }}</td>
+            <td>
+              {% if art.bestand < art.mindestbestand %}
+                <span class="status-red">🔴 kritisch</span>
+              {% elif art.bestand == art.mindestbestand %}
+                <span class="status-yellow">🟡 knapp</span>
+              {% else %}
+                <span class="status-green">🟢 ausreichend</span>
+              {% endif %}
+            </td>
+            <td>{{ art.lagerplatz or '-' }}</td>
+            <td><code class="badge">{{ id_plain }}</code></td>
+            <td>
+              <a href="{{ url_for('edit', id=art.id) }}" class="btn btn-edit">✏️ Bearbeiten</a>
+              <form action="{{ url_for('delete', id=art.id) }}" method="post" class="inline-form" onsubmit="return confirm('Wirklich löschen?');">
+                <button type="submit" class="btn btn-delete">🗑️</button>
+              </form>
+              {% if art.bestelllink %}
+                <a href="{{ art.bestelllink }}" target="_blank" rel="noopener" class="btn btn-order">🔗 Bestellen</a>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>
       });
       for (var i=0;i<rows.length;i++){ tbody.appendChild(rows[i]); }
       header.classList.toggle("asc", !isAsc);
