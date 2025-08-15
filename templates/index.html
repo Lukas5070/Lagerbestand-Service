@@ -33,7 +33,13 @@
     .status-yellow{color:#c58a00;font-weight:700}
     .status-red{color:#dc3545;font-weight:700}
 
-    /* Markiere die Zeile, zu der der Hash zeigt */
+    /* QR in der Barcode-Spalte */
+    .qrbox{display:flex;flex-direction:column;align-items:center;gap:4px}
+    .qrbox img{height:50px;width:auto;display:block}
+    .qrid{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+          font-size:12px;color:#555;background:#f6f6f6;border:1px solid #e0e0e0;border-radius:4px;padding:2px 6px}
+
+    /* Zeile, zu der #art-<id> zeigt, hervorheben */
     tr:target { outline: 3px solid #0d6efd; background: #e8f1ff; }
   </style>
 
@@ -105,7 +111,7 @@
           <th onclick="sortTable(2)">Mindestbestand</th>
           <th class="nosort">Status</th>
           <th onclick="sortTable(4)">Lagerplatz</th>
-          <th onclick="sortTable(5)">Barcode-ID</th>
+          <th class="nosort">Barcode</th>
           <th class="nosort">Aktionen</th>
         </tr>
       </thead>
@@ -131,7 +137,12 @@
               {% endif %}
             </td>
             <td>{{ art.lagerplatz or '-' }}</td>
-            <td><code>{{ id_plain }}</code></td>
+            <td>
+              <div class="qrbox">
+                <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="QR">
+                <span class="qrid">{{ id_plain }}</span>
+              </div>
+            </td>
             <td>
               <a href="{{ url_for('edit', id=art.id) }}" class="btn btn-edit">✏️ Bearbeiten</a>
               <form action="{{ url_for('delete', id=art.id) }}" method="post" class="inline-form" onsubmit="return confirm('Wirklich löschen?');">
