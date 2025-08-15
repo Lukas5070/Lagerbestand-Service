@@ -132,7 +132,7 @@ def add():
         )
         db.session.add(artikel)
         db.session.commit()
-        return redirect(url_for('index'))
+        return redirect(url_for('index') + f"#art-{artikel.id}")
     return render_template('add.html')
 
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
@@ -145,7 +145,8 @@ def edit(id):
         artikel.lagerplatz = request.form.get('lagerplatz', '')
         artikel.bestelllink = request.form.get('bestelllink', '')
         db.session.commit()
-        return redirect(url_for('index'))
+        # ⬅️ Zur passenden Zeile zurückscrollen
+        return redirect(url_for('index') + f"#art-{artikel.id}")
     return render_template('edit.html', artikel=artikel)
 
 @app.route('/update/<int:id>', methods=['GET', 'POST'])
@@ -156,14 +157,22 @@ def update(id):
         artikel.bestand += delta
         db.session.commit()
         sende_warnung(artikel)
-        return redirect(url_for('index'))
+        return redirect(url_for('index') + f"#art-{artikel.id}")
     return render_template('update.html', artikel=artikel)
 
 @app.route('/delete/<int:id>', methods=['POST'])
 def delete(id):
     artikel = Artikel.query.get_or_404(id)
+    # Optional: QR-Datei löschen (spart Speicher)
+    try:
+        pfad = os.path.join(app.config['UPLOAD_FOLDER'], artikel.barcode_filename)
+        if os.path.exists(pfad):
+            os.remove(pfad)
+    except Exception:
+        pass
     db.session.delete(artikel)
     db.session.commit()
+    # Nach dem Löschen gibt es die Zeile nicht mehr – zurück zum Anfang
     return redirect(url_for('index'))
 
 @app.route('/scan')
@@ -184,10 +193,10 @@ def adjust_barcode(barcode_id):
             artikel.bestand -= menge
         db.session.commit()
         sende_warnung(artikel)
-        return redirect(url_for('index'))
+        return redirect(url_for('index') + f"#art-{artikel.id}")
     return render_template('adjust.html', artikel=artikel)
 
-# Etiketten-Seite: „neueste“ + Suche (Server liefert Daten; Interaktion passiert im Template-JS)
+# Etiketten-Seite
 @app.route('/barcodes')
 def barcodes():
     query = request.args.get("q", "").strip().lower()
@@ -203,7 +212,7 @@ def barcodes():
     except Exception:
         neue = Artikel.query.order_by(Artikel.id.desc()).limit(15).all()
 
-    # optional serverseitige Suche (nutzt dein Template aktuell nicht zwingend)
+    # optionale serverseitige Suche
     if query:
         gefiltert = [a for a in alle if query in a.name.lower()]
     else:
