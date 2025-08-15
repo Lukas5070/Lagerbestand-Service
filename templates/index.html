@@ -7,37 +7,62 @@
   <style>
     :root{
       --blue:#0d6efd; --green:#28a745; --amber:#ffc107; --red:#dc3545;
-      --bg:#f5f5f5; --card:#fff; --bd:#e5e5e5; --text:#222;
+      --bg:#f6f7fb; --card:#fff; --bd:#e5e7ef; --text:#222;
     }
     *{box-sizing:border-box}
     html{scroll-behavior:smooth}
-    html,body{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
-    h1{margin:24px 24px 8px 24px;font-size:28px}
-    .top-links{margin:0 24px 16px 24px;display:flex;gap:16px;flex-wrap:wrap;align-items:center}
-    .top-links a{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:6px;background:#fff;border:1px solid var(--bd);text-decoration:none;color:#0d6efd;font-weight:600}
-    .controls{margin:0 24px 16px 24px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .controls input[type="text"], .controls select{padding:10px;border:1px solid #ccc;border-radius:6px;background:#fff}
+    body{margin:0;padding:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
 
-    .tablewrap{margin:0 24px 24px 24px;background:var(--card);border:1px solid var(--bd);border-radius:8px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.05)}
+    h1{margin:20px 16px 8px;font-size:28px;line-height:1.2}
+    .top-links{margin:0 16px 12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .top-links a{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:8px;background:var(--card);border:1px solid var(--bd);text-decoration:none;color:var(--blue);font-weight:600}
+
+    .controls{margin:0 16px 14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .controls input[type="text"], .controls select{padding:10px 12px;border:1px solid #cfd3dc;border-radius:8px;background:#fff;min-width:220px}
+
+    .tablewrap{margin:0 16px 20px;background:var(--card);border:1px solid var(--bd);border-radius:10px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.05)}
     table{width:100%;border-collapse:collapse}
-    th,td{padding:12px;border-bottom:1px solid #eee;text-align:center;vertical-align:middle}
-    thead th{background:#0d6efd;color:#fff;cursor:pointer;user-select:none}
+    th,td{padding:12px;border-bottom:1px solid #eef0f6;text-align:center;vertical-align:middle}
+    thead th{background:var(--blue);color:#fff;cursor:pointer;user-select:none}
     thead th.nosort{cursor:default}
-    thead th.asc::after{content:" ▲";} thead th.desc::after{content:" ▼";}
-    .inline-form{display:inline}
-    .btn{display:inline-block;padding:6px 10px;border-radius:4px;color:#fff;text-decoration:none;margin:2px;font-size:.9em}
+    thead th.asc::after{content:" ▲"} thead th.desc::after{content:" ▼"}
+
+    .btn{display:inline-block;padding:6px 10px;border-radius:6px;color:#fff;text-decoration:none;margin:2px;font-size:.9em}
     .btn-edit{background:#28a745}
     .btn-delete{background:#dc3545}
     .btn-order{background:#17a2b8}
+    .inline-form{display:inline}
+
     .status-green{color:#28a745;font-weight:700}
     .status-yellow{color:#c58a00;font-weight:700}
     .status-red{color:#dc3545;font-weight:700}
 
     .qrbox{display:flex;flex-direction:column;align-items:center;gap:4px}
     .qrbox img{height:50px;width:auto;display:block}
-    .qrid{font-family:ui-monospace, Menlo, Consolas, monospace;font-size:12px;color:#555;background:#f6f6f6;border:1px solid #e0e0e0;border-radius:4px;padding:2px 6px}
+    .qrid{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#555;background:#f6f6f6;border:1px solid #e0e0e0;border-radius:4px;padding:2px 6px;white-space:nowrap}
 
-    tr:target { outline: 3px solid #0d6efd; background: #e8f1ff; }
+    tr:target{outline:3px solid var(--blue);background:#e8f1ff}
+
+    /* ---------- Mobile: Tabelle → Kartenansicht ---------- */
+    @media (max-width: 768px){
+      .top-links a{flex:1 1 100%}
+      .controls{flex-direction:column;align-items:stretch}
+      .controls input[type="text"], .controls select{width:100%;min-width:0}
+
+      table thead{display:none}
+      table, tbody, tr, td{display:block;width:100%}
+      tbody tr{border-bottom:0;margin:12px 12px;border:1px solid var(--bd);border-radius:10px;background:#fff;overflow:hidden}
+      td{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #f0f2f8}
+      td:last-child{border-bottom:none}
+      td::before{
+        content:attr(data-label);
+        font-weight:600;color:#667085;margin-right:12px;flex:0 0 auto
+      }
+      /* Spalten-Titel für jede Zelle */
+      td[data-label="Aktionen"]{flex-wrap:wrap;gap:8px}
+      .btn{padding:10px 12px;font-size:16px}
+      .qrbox img{height:42px}
+    }
   </style>
 
   <script>
@@ -61,9 +86,11 @@
       var rows = Array.prototype.slice.call(tbody.rows);
       var headers = document.querySelectorAll("thead th");
       var header = headers[colIndex];
-      if (header.classList.contains("nosort")) return;
+      if (!header || header.classList.contains("nosort")) return;
+
       var isAsc = header.classList.contains("asc");
       for (var h=0;h<headers.length;h++){ headers[h].classList.remove("asc","desc"); }
+
       rows.sort(function(a,b){
         var A = (a.cells[colIndex].innerText || "").trim().toLowerCase();
         var B = (b.cells[colIndex].innerText || "").trim().toLowerCase();
@@ -71,6 +98,7 @@
         if (!isNaN(nA) && !isNaN(nB)) return isAsc ? (nA-nB) : (nB-nA);
         return isAsc ? A.localeCompare(B) : B.localeCompare(A);
       });
+
       for (var i=0;i<rows.length;i++){ tbody.appendChild(rows[i]); }
       header.classList.toggle("asc", !isAsc);
       header.classList.toggle("desc", isAsc);
@@ -84,12 +112,11 @@
     <a href="/add">➕ Artikel hinzufügen</a>
     <a href="/barcodes">🏷️ Barcodes drucken</a>
     <a href="/scan">📷 Barcode scannen</a>
-    <!-- 📤 CSV-Export (Excel-freundlich: ; + UTF-8 BOM) -->
     <a href="/export.csv?sep=semicolon&encoding=utf-8&bom=1">📤 CSV-Export</a>
   </div>
 
   <div class="controls">
-    🔍 <input type="text" id="searchInput" oninput="searchTable()" placeholder="Artikel, Lagerplatz oder Barcode-ID suchen…">
+    🔎 <input type="text" id="searchInput" oninput="searchTable()" placeholder="Artikel, Lagerplatz oder Barcode-ID suchen…">
     📊 <label for="statusFilter">Filter:</label>
     <select id="statusFilter" onchange="searchTable()">
       <option value="alle">Alle</option>
@@ -120,10 +147,10 @@
               data-lagerplatz="{{ (art.lagerplatz or '')|lower }}"
               data-id="{{ id_plain|lower }}"
               data-status="{{ status_txt }}">
-            <td>{{ art.name }}</td>
-            <td>{{ art.bestand }}</td>
-            <td>{{ art.mindestbestand }}</td>
-            <td>
+            <td data-label="Name">{{ art.name }}</td>
+            <td data-label="Bestand">{{ art.bestand }}</td>
+            <td data-label="Mindestbestand">{{ art.mindestbestand }}</td>
+            <td data-label="Status">
               {% if art.bestand < art.mindestbestand %}
                 <span class="status-red">🔴 kritisch</span>
               {% elif art.bestand == art.mindestbestand %}
@@ -132,17 +159,17 @@
                 <span class="status-green">🟢 ausreichend</span>
               {% endif %}
             </td>
-            <td>{{ art.lagerplatz or '-' }}</td>
-            <td>
+            <td data-label="Lagerplatz">{{ art.lagerplatz or '-' }}</td>
+            <td data-label="Barcode">
               <div class="qrbox">
                 <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="QR">
                 <span class="qrid">{{ id_plain }}</span>
               </div>
             </td>
-            <td>
+            <td data-label="Aktionen">
               <a href="{{ url_for('edit', id=art.id) }}" class="btn btn-edit">✏️ Bearbeiten</a>
               <form action="{{ url_for('delete', id=art.id) }}" method="post" class="inline-form" onsubmit="return confirm('Wirklich löschen?');">
-                <button type="submit" class="btn btn-delete">🗑️</button>
+                <button type="submit" class="btn btn-delete">🗑️ Löschen</button>
               </form>
               {% if art.bestelllink %}
                 <a href="{{ art.bestelllink }}" target="_blank" rel="noopener" class="btn btn-order">🔗 Bestellen</a>
