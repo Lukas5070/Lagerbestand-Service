@@ -2,23 +2,69 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Barcode-Anpassung</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bestand über Barcode ändern</title>
+  <style>
+    :root{
+      --blue:#0d6efd; --green:#28a745; --red:#dc3545; --bd:#e5e7ef; --bg:#f6f7fb;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;padding:16px;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Helvetica,sans-serif;background:var(--bg);color:#222}
+    .card{max-width:720px;margin:0 auto;background:#fff;border:1px solid var(--bd);border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.06);padding:18px}
+    h1{margin:0 0 8px;font-size:22px}
+    .meta{margin:0 0 16px;color:#444}
+    .field{margin:12px 0}
+    label{display:block;margin:0 0 6px;font-weight:600}
+    input[type="number"], input[type="text"]{
+      width:100%;padding:12px 14px;border:1px solid #cfd3dc;border-radius:10px;font-size:16px;background:#fff
+    }
+    .seg{display:flex;gap:10px;margin:8px 0}
+    .seg input{display:none}
+    .seg label{
+      flex:1 1 0;padding:12px;border:1px solid #cfd3dc;border-radius:10px;text-align:center;cursor:pointer;
+      user-select:none;background:#fff;font-weight:600
+    }
+    .seg input:checked + label{border-color:var(--blue);box-shadow:0 0 0 3px rgba(13,110,253,.15)}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .btn{
+      display:inline-block;padding:12px 14px;border-radius:10px;border:0;color:#fff;text-decoration:none;font-weight:700;font-size:16px
+    }
+    .btn-save{background:var(--blue)}
+    .btn-cancel{background:#6c757d}
+    .hint{font-size:13px;color:#666;margin-top:6px}
+    @media (min-width: 900px){
+      h1{font-size:24px}
+    }
+  </style>
 </head>
 <body>
-  <h1>🔄 Bestand über Barcode ändern</h1>
-  <h3>{{ artikel.name }} (aktuell: {{ artikel.bestand }})</h3>
-  <form method="post">
-    <label>Menge:<br>
-      <input type="number" name="menge" required>
-    </label><br><br>
-    <label>Aktion:<br>
-      <select name="aktion">
-        <option value="hinzufügen">➕ Hinzufügen</option>
-        <option value="entnehmen">➖ Entnehmen</option>
-      </select>
-    </label><br><br>
-    <button type="submit">💾 Speichern</button>
-    <a href="{{ url_for('index') }}">❌ Abbrechen</a>
-  </form>
+  <div class="card">
+    <h1>🚚 Bestand über Barcode ändern</h1>
+    <p class="meta"><strong>{{ artikel.name }}</strong> (aktuell: <strong>{{ artikel.bestand }}</strong>)</p>
+
+    <form method="post">
+      <div class="field">
+        <label for="menge">Menge</label>
+        <input id="menge" name="menge" type="number" inputmode="numeric" min="1" step="1" required placeholder="z. B. 1">
+      </div>
+
+      <div class="field">
+        <label>Aktion</label>
+        <div class="seg">
+          <input type="radio" id="add" name="aktion" value="hinzufügen" checked>
+          <label for="add">➕ Hinzufügen</label>
+
+          <input type="radio" id="remove" name="aktion" value="entnehmen">
+          <label for="remove">➖ Entnehmen</label>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-save" type="submit">💾 Speichern</button>
+        <a class="btn btn-cancel" href="{{ url_for('index') }}#art-{{ artikel.id }}">✖️ Abbrechen</a>
+      </div>
+      <div class="hint">Tipp: Du kommst danach automatisch wieder zu diesem Artikel in der Übersicht.</div>
+    </form>
+  </div>
 </body>
 </html>
