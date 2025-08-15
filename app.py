@@ -189,3 +189,34 @@ def adjust_barcode(barcode_id):
     return render_template('adjust.html', artikel=artikel)
 
 # Etiketten-Seite: „neueste“ + Suche (Server liefert Daten; Interaktion passiert im Template-JS)
+@app.route('/barcodes')
+def barcodes():
+    query = request.args.get("q", "").strip().lower()
+    alle = Artikel.query.order_by(Artikel.name.asc()).all()
+
+    # „Neueste“: letzten 7 Tage (Fallback: jüngste 15 per ID)
+    eine_woche = datetime.utcnow() - timedelta(days=7)
+    try:
+        neue = Artikel.query.filter(Artikel.created_at >= eine_woche)\
+                            .order_by(Artikel.created_at.desc()).all()
+        if not neue:
+            neue = Artikel.query.order_by(Artikel.id.desc()).limit(15).all()
+    except Exception:
+        neue = Artikel.query.order_by(Artikel.id.desc()).limit(15).all()
+
+    # optional serverseitige Suche (nutzt dein Template aktuell nicht zwingend)
+    if query:
+        gefiltert = [a for a in alle if query in a.name.lower()]
+    else:
+        gefiltert = alle
+
+    for art in gefiltert:
+        ensure_barcode_image(art.barcode_filename[:-4])
+
+    return render_template('barcodes.html', artikel=gefiltert, neue_artikel=neue, suchbegriff=query)
+
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
