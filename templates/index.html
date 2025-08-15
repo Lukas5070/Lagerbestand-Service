@@ -14,14 +14,14 @@
     html,body{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
     h1{margin:24px 24px 8px 24px;font-size:28px}
     .top-links{margin:0 24px 16px 24px;display:flex;gap:16px;flex-wrap:wrap;align-items:center}
-    .top-links a{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:6px;background:#fff;border:1px solid var(--bd);text-decoration:none;color:var(--blue);font-weight:600}
+    .top-links a{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:6px;background:#fff;border:1px solid var(--bd);text-decoration:none;color:#0d6efd;font-weight:600}
     .controls{margin:0 24px 16px 24px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .controls input[type="text"], .controls select{padding:10px;border:1px solid #ccc;border-radius:6px;background:#fff}
 
     .tablewrap{margin:0 24px 24px 24px;background:var(--card);border:1px solid var(--bd);border-radius:8px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.05)}
     table{width:100%;border-collapse:collapse}
     th,td{padding:12px;border-bottom:1px solid #eee;text-align:center;vertical-align:middle}
-    thead th{background:var(--blue);color:#fff;cursor:pointer;user-select:none}
+    thead th{background:#0d6efd;color:#fff;cursor:pointer;user-select:none}
     thead th.nosort{cursor:default}
     thead th.asc::after{content:" ▲";} thead th.desc::after{content:" ▼";}
     .inline-form{display:inline}
@@ -33,20 +33,17 @@
     .status-yellow{color:#c58a00;font-weight:700}
     .status-red{color:#dc3545;font-weight:700}
 
-    /* QR in der Barcode-Spalte */
     .qrbox{display:flex;flex-direction:column;align-items:center;gap:4px}
     .qrbox img{height:50px;width:auto;display:block}
-    .qrid{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-          font-size:12px;color:#555;background:#f6f6f6;border:1px solid #e0e0e0;border-radius:4px;padding:2px 6px}
+    .qrid{font-family:ui-monospace, Menlo, Consolas, monospace;font-size:12px;color:#555;background:#f6f6f6;border:1px solid #e0e0e0;border-radius:4px;padding:2px 6px}
 
-    /* Zeile, zu der #art-<id> zeigt, hervorheben */
     tr:target { outline: 3px solid #0d6efd; background: #e8f1ff; }
   </style>
 
   <script>
     function searchTable() {
       var q = (document.getElementById("searchInput").value || "").toLowerCase().trim();
-      var filterValue = document.getElementById("statusFilter").value; // 'alle' | 'kritisch' | 'knapp'
+      var filterValue = document.getElementById("statusFilter").value;
       var rows = document.querySelectorAll("tbody tr");
       for (var i=0;i<rows.length;i++){
         var r = rows[i];
@@ -65,10 +62,8 @@
       var headers = document.querySelectorAll("thead th");
       var header = headers[colIndex];
       if (header.classList.contains("nosort")) return;
-
       var isAsc = header.classList.contains("asc");
       for (var h=0;h<headers.length;h++){ headers[h].classList.remove("asc","desc"); }
-
       rows.sort(function(a,b){
         var A = (a.cells[colIndex].innerText || "").trim().toLowerCase();
         var B = (b.cells[colIndex].innerText || "").trim().toLowerCase();
@@ -76,7 +71,6 @@
         if (!isNaN(nA) && !isNaN(nB)) return isAsc ? (nA-nB) : (nB-nA);
         return isAsc ? A.localeCompare(B) : B.localeCompare(A);
       });
-
       for (var i=0;i<rows.length;i++){ tbody.appendChild(rows[i]); }
       header.classList.toggle("asc", !isAsc);
       header.classList.toggle("desc", isAsc);
@@ -90,6 +84,8 @@
     <a href="/add">➕ Artikel hinzufügen</a>
     <a href="/barcodes">🏷️ Barcodes drucken</a>
     <a href="/scan">📷 Barcode scannen</a>
+    <!-- 📤 CSV-Export (Excel-freundlich: ; + UTF-8 BOM) -->
+    <a href="/export.csv?sep=semicolon&encoding=utf-8&bom=1">📤 CSV-Export</a>
   </div>
 
   <div class="controls">
