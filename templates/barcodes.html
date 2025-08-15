@@ -2,25 +2,27 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Etiketten – QR Avery L4743REV</title>
   <style>
-    @page {
-      size: A4;
-      margin: 0;
-    }
+    @page { size: A4; margin: 0; }
 
     html, body {
       margin: 0;
       padding: 0;
       font-family: Arial, sans-serif;
       font-size: 12px;
-      overflow: hidden;
+      /* Scrollen erlauben */
+      overflow-y: auto;
+      height: auto;
+      background: #fff;
     }
 
+    /* Seitenraster (Avery L4743REV: 2 Spalten x 6 Zeilen) */
     .seite {
       height: 297mm;
       width: 210mm;
-      padding: 21.5mm 7mm;
+      padding: 21.5mm 7mm;     /* Feinabgleich Seitenränder */
       box-sizing: border-box;
       display: grid;
       grid-template-columns: repeat(2, 99.1mm);
@@ -34,6 +36,11 @@
       padding: 3mm 2mm;
       text-align: center;
       overflow: hidden;
+      position: relative;
+      cursor: pointer;    /* ganze Karte klickbar */
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      user-select: none;
     }
 
     .etikett img {
@@ -42,61 +49,87 @@
       margin: 2mm 0 1mm;
     }
 
+    .meta {
+      font-size: 10px;
+      color: #555;
+      line-height: 1.2;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #eee;
+      font-size: 10px;
+      color: #333;
+    }
+
     @media print {
       .noprint { display: none; }
+      .etikett .auswahlbox { display: none; }
     }
 
-    .noprint {
-      margin: 10px;
+    .noprint { margin: 10px; }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
     }
+
+    .toolbar input[type="text"],
+    .toolbar input[type="number"] {
+      padding: 6px 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      background:#f0f0f0;
+    }
+    .btn-blue { background:#007BFF; color:#fff; }
+    .btn-teal { background:#17a2b8; color:#fff; }
+    .btn-grey { background:#6c757d; color:#fff; }
+    .btn-green { background:#28a745; color:#fff; }
+    .btn-amber { background:#ffc107; color:#000; }
 
     .neu-artikel {
-      margin: 20px 10px;
+      margin: 12px 10px 0;
       padding: 10px;
       background: #f8f9fa;
       border: 1px solid #ccc;
       border-radius: 5px;
     }
-
     .neu-artikel img {
-      height: 50px;
+      height: 42px;
       vertical-align: middle;
       margin-right: 10px;
     }
+    .neu-eintrag { margin-bottom: 8px; }
+    .neu-eintrag small { color:#666; font-size: 10px; }
 
-    .neu-artikel h2 {
-      margin-top: 0;
-    }
+    .druckbereich { display: block; }
+    .druckbereich.ausblenden { display: none; }
 
-    .neu-eintrag {
-      margin-bottom: 10px;
-    }
+    .etikett.ausgeblendet { display: none; }
 
-    .neu-eintrag small {
-      color: #666;
-      font-size: 10px;
-    }
-
-    .druckbereich {
-      display: block;
-    }
-
-    .druckbereich.ausblenden {
-      display: none;
-    }
-
-    .etikett input[type="checkbox"] {
-      margin-top: 5px;
-    }
-
-    .etikett.ausgeblendet {
-      display: none;
-    }
-
-    #suchfeld {
-      width: 300px;
-      padding: 5px;
-      margin-right: 10px;
+    /* Checkbox gut anklickbar & über allem */
+    .auswahlbox {
+      position: absolute;
+      left: 4px;
+      top: 4px;
+      -webkit-transform: scale(1.2);
+      transform: scale(1.2);
+      z-index: 5;
+      pointer-events: auto; /* explizit anklickbar */
+      cursor: pointer;
     }
   </style>
 </head>
@@ -104,96 +137,248 @@
 
   <!-- Steuerelemente -->
   <div class="noprint">
-    <a href="/" style="padding:6px 12px; background:#007BFF; color:#fff; text-decoration:none; border-radius:5px;">⬅ Zurück</a>
-    <input type="text" id="suchfeld" placeholder="🔍 Artikel suchen..." onkeyup="filterEtiketten()">
-    <button onclick="zeigeNurNeue()" style="padding:6px 12px; background:#17a2b8; color:#fff; border:none; border-radius:5px;">🆕 Nur neue drucken</button>
-    <button onclick="zeigeAlle()" style="padding:6px 12px; background:#6c757d; color:#fff; border:none; border-radius:5px;">📦 Alle anzeigen</button>
-    <button onclick="zeigeAuswahl()" style="padding:6px 12px; background:#ffc107; color:#000; border:none; border-radius:5px;">✅ Nur Auswahl drucken</button>
-    <button onclick="window.print()" style="padding:6px 12px; background:#28a745; color:#fff; border:none; border-radius:5px;">🖨️ Jetzt drucken</button>
-    <p style="margin-top:10px;">Druckeinstellungen: A4 · 100 % · Keine Ränder · Hintergrundgrafiken ✅</p>
+    <div class="toolbar">
+      <a href="/" class="btn btn-blue">⬅ Zurück</a>
+
+      <input type="text" id="suchfeld" placeholder="🔍 Suche: Name, ID, Lagerplatz …" oninput="filterEtiketten()">
+
+      <button type="button" class="btn btn-teal" onclick="zeigeNurNeue()">🆕 Nur neue</button>
+      <button type="button" class="btn btn-grey" onclick="zeigeAlle()">📦 Alle</button>
+
+      <button type="button" class="btn btn-grey" onclick="selectVisible(true)">☑️ Sichtbare auswählen</button>
+      <button type="button" class="btn btn-grey" onclick="selectVisible(false)">🔲 Auswahl aufheben</button>
+
+      <label for="kopien">Kopien pro ausgewähltem Etikett:</label>
+      <input type="number" id="kopien" min="1" value="1" style="width:70px">
+
+      <button type="button" class="btn btn-amber" onclick="zeigeNurAuswahl()">✅ Nur Auswahl drucken</button>
+      <button type="button" class="btn btn-green" onclick="window.print()">🖨️ Jetzt drucken</button>
+      <button type="button" class="btn" onclick="zurueckZurUebersicht()" id="btnZurueck" style="display:none;">↩️ Zur Übersicht</button>
+    </div>
+    <p style="margin:6px 0 0 2px;">Druckeinstellungen: A4 · 100 % · Keine Ränder · Hintergrundgrafiken ✅</p>
   </div>
 
-  <!-- Zuletzt hinzugefügte Artikel -->
-  <div class="noprint neu-artikel">
-    <h2>🆕 Zuletzt hinzugefügte Artikel</h2>
-    {% if neue_artikel %}
-      {% for art in neue_artikel %}
-        <div class="neu-eintrag">
-          <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="Barcode">
-          <strong>{{ art.name }}</strong><br>
-          <small>ID: {{ art.barcode_filename[:-4] }} | Hinzugefügt: {{ art.created_at.strftime('%d.%m.%Y %H:%M') if art.created_at else '–' }}</small>
-        </div>
-      {% endfor %}
-    {% else %}
-      <p>Keine neuen Artikel gefunden.</p>
-    {% endif %}
-  </div>
-
-  <!-- Etiketten – Neue Artikel -->
-  <div id="nur-neue" class="druckbereich ausblenden">
-    {% for i in range(0, neue_artikel|length, 12) %}
-      <div class="seite">
-        {% for art in neue_artikel[i:i+12] %}
-          <div class="etikett">
-            <strong>{{ art.name }}</strong><br>
-            <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}"><br>
-            <small>{{ art.barcode_filename[:-4] }}</small><br>
-            <input type="checkbox" class="checkbox-auswahl">
+  <!-- Zuletzt hinzugefügte Artikel (nur Info) -->
+  <div class="noprint neu-artikel" id="panel-neuinfo">
+    <strong>🆕 Zuletzt hinzugefügt</strong>
+    <div>
+      {% if neue_artikel %}
+        {% for art in neue_artikel %}
+          <div class="neu-eintrag">
+            <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="Barcode">
+            <strong>{{ art.name }}</strong>
+            <small>
+              &nbsp;|&nbsp;ID: {{ art.barcode_filename[:-4] }}&nbsp;|&nbsp;
+              Hinzugefügt:
+              {% if art.created_at and art.created_at.strftime %}
+                {{ art.created_at.strftime('%d.%m.%Y %H:%M') }}
+              {% else %}–{% endif %}
+            </small>
           </div>
         {% endfor %}
-      </div>
-    {% endfor %}
+      {% else %}
+        <em>Keine neuen Artikel gefunden.</em>
+      {% endif %}
+    </div>
   </div>
 
-  <!-- Etiketten – Alle Artikel -->
+  <!-- Etiketten: ALLE Artikel -->
   <div id="alle-artikel" class="druckbereich">
     {% for i in range(0, artikel|length, 12) %}
       <div class="seite">
         {% for art in artikel[i:i+12] %}
-          <div class="etikett">
+          <div class="etikett"
+               data-name="{{ art.name|lower }}"
+               data-id="{{ art.barcode_filename[:-4]|lower }}"
+               data-lagerplatz="{{ (art.lagerplatz or '')|lower }}">
+            <input type="checkbox" class="auswahlbox">
             <strong>{{ art.name }}</strong><br>
-            <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}"><br>
-            <small>{{ art.barcode_filename[:-4] }}</small><br>
-            <input type="checkbox" class="checkbox-auswahl">
+            <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="Barcode"><br>
+            <div class="meta">
+              <span class="badge">ID: {{ art.barcode_filename[:-4] }}</span>
+              {% if art.lagerplatz %}&nbsp;•&nbsp;Lagerplatz: {{ art.lagerplatz }}{% endif %}
+            </div>
           </div>
         {% endfor %}
       </div>
     {% endfor %}
   </div>
 
-  <!-- Umschalter & Filter -->
+  <!-- Etiketten: NUR neue Artikel -->
+  <div id="nur-neue" class="druckbereich ausblenden">
+    {% for i in range(0, neue_artikel|length, 12) %}
+      <div class="seite">
+        {% for art in neue_artikel[i:i+12] %}
+          <div class="etikett"
+               data-name="{{ art.name|lower }}"
+               data-id="{{ art.barcode_filename[:-4]|lower }}"
+               data-lagerplatz="{{ (art.lagerplatz or '')|lower }}">
+            <input type="checkbox" class="auswahlbox">
+            <strong>{{ art.name }}</strong><br>
+            <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="Barcode"><br>
+            <div class="meta">
+              <span class="badge">ID: {{ art.barcode_filename[:-4] }}</span>
+              {% if art.lagerplatz %}&nbsp;•&nbsp;Lagerplatz: {{ art.lagerplatz }}{% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Dynamisch erzeugter Druck-Container: NUR Auswahl -->
+  <div id="druck-auswahl" class="druckbereich ausblenden"></div>
+
   <script>
+    var aktiverBereich = 'alle';  // 'alle' | 'neu' | 'auswahl'
+
+    // Ganze Karte klickbar -> Checkbox toggeln (aber nicht doppelt, wenn direkt die Checkbox geklickt wird)
+    document.addEventListener('click', function (e) {
+      var card = e.target.closest ? e.target.closest('.etikett') : null;
+      if (!card) return;
+      if (e.target.className && String(e.target.className).indexOf('auswahlbox') !== -1) return;
+      var cb = card.querySelector ? card.querySelector('.auswahlbox') : null;
+      if (cb) { cb.checked = !cb.checked; }
+    });
+
+    function sichtbareEtikettenContainer() {
+      if (aktiverBereich === 'alle') return document.querySelectorAll('#alle-artikel .etikett');
+      if (aktiverBereich === 'neu')  return document.querySelectorAll('#nur-neue .etikett');
+      if (aktiverBereich === 'auswahl') return document.querySelectorAll('#druck-auswahl .etikett');
+      return [];
+    }
+
     function zeigeNurNeue() {
-      document.getElementById('nur-neue').classList.remove('ausblenden');
       document.getElementById('alle-artikel').classList.add('ausblenden');
+      document.getElementById('nur-neue').classList.remove('ausblenden');
+      document.getElementById('druck-auswahl').classList.add('ausblenden');
+      document.getElementById('btnZurueck').style.display = 'none';
+      document.getElementById('panel-neuinfo').style.display = '';
+      aktiverBereich = 'neu';
+      filterEtiketten(); // Filter erneut anwenden
     }
 
     function zeigeAlle() {
-      document.getElementById('nur-neue').classList.add('ausblenden');
       document.getElementById('alle-artikel').classList.remove('ausblenden');
+      document.getElementById('nur-neue').classList.add('ausblenden');
+      document.getElementById('druck-auswahl').classList.add('ausblenden');
+      document.getElementById('btnZurueck').style.display = 'none';
+      document.getElementById('panel-neuinfo').style.display = '';
+      aktiverBereich = 'alle';
+      filterEtiketten();
     }
 
-    function zeigeAuswahl() {
-      const etiketten = document.querySelectorAll('.etikett');
-      etiketten.forEach(e => e.classList.add('ausgeblendet'));
-
-      document.querySelectorAll('.checkbox-auswahl:checked').forEach(cb => {
-        cb.closest('.etikett').classList.remove('ausgeblendet');
-      });
+    function zurueckZurUebersicht() {
+      if (aktiverBereich === 'auswahl') {
+        zeigeAlle();
+        window.scrollTo(0,0);
+      }
     }
 
     function filterEtiketten() {
-      const query = document.getElementById('suchfeld').value.toLowerCase();
-      const etiketten = document.querySelectorAll('.etikett');
-
-      etiketten.forEach(etikett => {
-        const text = etikett.innerText.toLowerCase();
-        if (text.includes(query)) {
-          etikett.classList.remove('ausgeblendet');
+      var fld = document.getElementById('suchfeld');
+      var q = (fld && fld.value ? fld.value : '').toLowerCase();
+      var alle = sichtbareEtikettenContainer();
+      for (var i=0; i<alle.length; i++) {
+        var e = alle[i];
+        var name = e.getAttribute('data-name') || '';
+        var id   = e.getAttribute('data-id') || '';
+        var lp   = e.getAttribute('data-lagerplatz') || '';
+        var matched = !q || name.indexOf(q) !== -1 || id.indexOf(q) !== -1 || lp.indexOf(q) !== -1;
+        if (matched) {
+          e.classList.remove('ausgeblendet');
         } else {
-          etikett.classList.add('ausgeblendet');
+          e.classList.add('ausgeblendet');
         }
-      });
+      }
+    }
+
+    function selectVisible(checked) {
+      var alle = sichtbareEtikettenContainer();
+      for (var i=0; i<alle.length; i++) {
+        var e = alle[i];
+        if (!e.classList.contains('ausgeblendet')) {
+          var cb = e.querySelector('.auswahlbox');
+          if (cb) cb.checked = checked;
+        }
+      }
+    }
+
+    function zeigeNurAuswahl() {
+      var quelle = sichtbareEtikettenContainer();
+      var kopienFld = document.getElementById('kopien');
+      var kopien = 1;
+      if (kopienFld && kopienFld.value) {
+        var k = parseInt(kopienFld.value, 10);
+        if (!isNaN(k) && k > 0) kopien = k;
+      }
+
+      var selektierte = [];
+      for (var i=0; i<quelle.length; i++) {
+        var e = quelle[i];
+        var cb = e.querySelector('.auswahlbox');
+        if (cb && cb.checked && !e.classList.contains('ausgeblendet')) {
+          var name = e.getAttribute('data-name') || '';
+          var id   = e.getAttribute('data-id') || '';
+          var lp   = e.getAttribute('data-lagerplatz') || '';
+          var imgEl = e.querySelector('img');
+          var img  = imgEl ? imgEl.getAttribute('src') : '';
+          selektierte.push({ name: name, id: id, lp: lp, img: img });
+        }
+      }
+
+      if (selektierte.length === 0) {
+        alert('Bitte wähle mindestens ein Etikett aus.');
+        return;
+      }
+
+      var ziel = document.getElementById('druck-auswahl');
+      ziel.innerHTML = '';
+
+      // Kopien replizieren
+      var repliziert = [];
+      for (var s=0; s<selektierte.length; s++) {
+        for (var c=0; c<kopien; c++) { repliziert.push(selektierte[s]); }
+      }
+
+      // In Seiten zu 12 Etiketten aufteilen
+      for (var i2=0; i2<repliziert.length; i2 += 12) {
+        var seite = document.createElement('div');
+        seite.className = 'seite';
+        var slice = repliziert.slice(i2, i2 + 12);
+        for (var j=0; j<slice.length; j++) {
+          var item = slice[j];
+          var card = document.createElement('div');
+          card.className = 'etikett';
+          card.innerHTML =
+            '<strong>' + esc(item.name) + '</strong><br>' +
+            '<img src="' + esc(item.img) + '" alt="Barcode"><br>' +
+            '<div class="meta">' +
+              '<span class="badge">ID: ' + esc(item.id) + '</span>' +
+              (item.lp ? '&nbsp;•&nbsp;Lagerplatz: ' + esc(item.lp) : '') +
+            '</div>';
+          seite.appendChild(card);
+        }
+        ziel.appendChild(seite);
+      }
+
+      document.getElementById('alle-artikel').classList.add('ausblenden');
+      document.getElementById('nur-neue').classList.add('ausblenden');
+      document.getElementById('panel-neuinfo').style.display = 'none';
+      ziel.classList.remove('ausblenden');
+      document.getElementById('btnZurueck').style.display = '';
+      aktiverBereich = 'auswahl';
+      window.scrollTo(0,0);
+    }
+
+    function esc(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g,'&#039;');
     }
   </script>
 
