@@ -19,9 +19,13 @@ ABSENDER_EMAIL = "lager.servicefrick@gmail.com"
 ABSENDER_PASSWORT = "Haesler4313!"  # ❗ In Produktion .env verwenden
 EMPFÄNGER_EMAIL = "service@haesler-ag.ch"
 
-# 🔧 Flask App
+# 🔧 Flask App + DB-URL fix (postgres:// → postgresql://)
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///lager.db")
+_db_url = os.environ.get("DATABASE_URL", "sqlite:///lager.db")
+if _db_url.startswith("postgres://"):
+    _db_url = _db_url.replace("postgres://", "postgresql://", 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/barcodes'
 app.config['PRODUCT_IMG_FOLDER'] = 'static/product_images'
 db = SQLAlchemy(app)
@@ -30,14 +34,27 @@ db = SQLAlchemy(app)
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['PRODUCT_IMG_FOLDER'], exist_ok=True)
 
+# ========== Datenmodell ==========
+class Artikel(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    bestand = db.Column(db.Integer, nullable=False, default=0)
+    mindestbestand = db.Column(db.Integer, nullable=False, default=0)
+    barcode_filename = db.Column(db.String(100), nullable=False)
+    lagerplatz = db.Column(db.String(100), nullable=True)
+    bestelllink = db.Column(db.String(300), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    image_filename = db.Column(db.String(200), nullable=True)  # lokal gespeichertes Bild
+
 # ========== DB-Migrations-Helper: funktioniert für PostgreSQL & SQLite ==========
 def ensure_column(table: str, column: str, ddl_pg: str, ddl_sqlite: str):
     """
     Lege eine Spalte an, falls sie noch nicht existiert.
-    - ddl_pg: vollständiges "colname TYPE DEFAULT ..." für Postgres
-    - ddl_sqlite: vollständiges "colname TYPE DEFAULT ..." für SQLite
+    - ddl_pg:  "colname TYPE DEFAULT ..."    (Postgres)
+    - ddl_sqlite: gleiches Format             (SQLite)
     """
-    dialect = db.session.bind.dialect.name
+    # Immer über db.engine gehen (db.session.bind kann zu diesem Zeitpunkt None sein)
+    dialect = db.engine.dialect.name
     try:
         if dialect == "postgresql":
             db.session.execute(text(f"""
@@ -53,7 +70,7 @@ def ensure_column(table: str, column: str, ddl_pg: str, ddl_sqlite: str):
                 $$;
             """))
         else:
-            # SQLite: Spaltenliste prüfen, dann ALTER TABLE ohne IF NOT EXISTS
+            # SQLite: Spaltenliste prüfen, dann ALTER TABLE
             cols = db.session.execute(text(f"PRAGMA table_info({table})")).fetchall()
             names = [row[1] for row in cols]  # 0:cid, 1:name, ...
             if column not in names:
@@ -64,35 +81,22 @@ def ensure_column(table: str, column: str, ddl_pg: str, ddl_sqlite: str):
         db.session.rollback()
         print(f"⚠️ Fehler beim Hinzufügen der Spalte '{column}':", e)
 
+# Bei App-Start: Tabelle sicher anlegen, dann Spalten migrieren
 with app.app_context():
-    # lagerplatz
-    ensure_column(
-        table="artikel",
-        column="lagerplatz",
-        ddl_pg="lagerplatz VARCHAR(100)",
-        ddl_sqlite="lagerplatz VARCHAR(100)"
-    )
-    # bestelllink
-    ensure_column(
-        table="artikel",
-        column="bestelllink",
-        ddl_pg="bestelllink VARCHAR(300)",
-        ddl_sqlite="bestelllink VARCHAR(300)"
-    )
-    # created_at
-    ensure_column(
-        table="artikel",
-        column="created_at",
-        ddl_pg="created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
-        ddl_sqlite="created_at DATETIME DEFAULT (CURRENT_TIMESTAMP)"
-    )
-    # image_filename
-    ensure_column(
-        table="artikel",
-        column="image_filename",
-        ddl_pg="image_filename VARCHAR(200)",
-        ddl_sqlite="image_filename VARCHAR(200)"
-    )
+    db.create_all()  # stellt sicher, dass 'artikel' existiert
+
+    ensure_column("artikel", "lagerplatz",
+                  "lagerplatz VARCHAR(100)",
+                  "lagerplatz VARCHAR(100)")
+    ensure_column("artikel", "bestelllink",
+                  "bestelllink VARCHAR(300)",
+                  "bestelllink VARCHAR(300)")
+    ensure_column("artikel", "created_at",
+                  "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+                  "created_at DATETIME DEFAULT (CURRENT_TIMESTAMP)")
+    ensure_column("artikel", "image_filename",
+                  "image_filename VARCHAR(200)",
+                  "image_filename VARCHAR(200)")
 
 # ========== QR-Code erzeugen ==========
 def ensure_barcode_image(barcode_id):
@@ -130,18 +134,6 @@ Lagerplatz: {artikel.lagerplatz or 'nicht angegeben'}"""
         except Exception as e:
             print("Fehler beim E-Mail-Versand:", e)
 
-# ========== Datenmodell ==========
-class Artikel(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    bestand = db.Column(db.Integer, nullable=False, default=0)
-    mindestbestand = db.Column(db.Integer, nullable=False, default=0)
-    barcode_filename = db.Column(db.String(100), nullable=False)
-    lagerplatz = db.Column(db.String(100), nullable=True)
-    bestelllink = db.Column(db.String(300), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    image_filename = db.Column(db.String(200), nullable=True)  # lokal gespeichertes Bild
-
 # ========== 🔍 Produktbild-Ermittlung & Cache ==========
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -150,42 +142,32 @@ HEADERS = {
 }
 
 def _guess_ext_from_mime(mime: str) -> str:
-    if not mime:
-        return ".jpg"
-    if "jpeg" in mime:
-        return ".jpg"
-    if "png" in mime:
-        return ".png"
-    if "webp" in mime:
-        return ".webp"
-    if "gif" in mime:
-        return ".gif"
+    if not mime: return ".jpg"
+    if "jpeg" in mime: return ".jpg"
+    if "png" in mime: return ".png"
+    if "webp" in mime: return ".webp"
+    if "gif" in mime: return ".gif"
     return mimetypes.guess_extension(mime) or ".jpg"
 
 def _pick_image_url(html: str, page_url: str) -> str | None:
     """Sucht bevorzugt og:image / twitter:image; fallback: erstes <img>."""
     soup = BeautifulSoup(html, "html.parser")
 
-    # Open Graph
     og = soup.find("meta", property="og:image")
     if og and og.get("content"):
         return urljoin(page_url, og["content"].strip())
 
-    # Twitter
     tw = soup.find("meta", attrs={"name": "twitter:image"})
     if tw and tw.get("content"):
         return urljoin(page_url, tw["content"].strip())
 
-    # link rel=image_src
     link_img = soup.find("link", rel=lambda v: v and "image_src" in v)
     if link_img and link_img.get("href"):
         return urljoin(page_url, link_img["href"].strip())
 
-    # erstes <img> (pragmatischer Fallback, vermeidet offensichtliche Icons/Logos)
     for img in soup.find_all("img"):
         src = (img.get("src") or "").strip()
-        if not src:
-            continue
+        if not src: continue
         low = src.lower()
         if any(x in low for x in ["logo", "icon", "sprite", "placeholder", "spinner"]):
             continue
@@ -197,8 +179,6 @@ def fetch_and_cache_product_image(artikel: Artikel) -> bool:
     """Versucht, ein Produktbild aus bestelllink zu holen und lokal zu speichern."""
     if not artikel.bestelllink:
         return False
-
-    # 1) Seite holen
     try:
         resp = requests.get(artikel.bestelllink, headers=HEADERS, timeout=7)
         if resp.status_code >= 400:
@@ -208,24 +188,20 @@ def fetch_and_cache_product_image(artikel: Artikel) -> bool:
         print("Bild: Fehler beim Laden der Bestellseite:", e)
         return False
 
-    # 2) Bild-URL bestimmen
     img_url = _pick_image_url(html, artikel.bestelllink)
     if not img_url:
         return False
 
-    # nur http/https erlauben (Sicherheit)
     scheme = urlparse(img_url).scheme
     if scheme not in ("http", "https"):
         return False
 
-    # 3) Bild holen
     try:
         img_resp = requests.get(img_url, headers=HEADERS, stream=True, timeout=10)
         ctype = img_resp.headers.get("Content-Type", "")
         if img_resp.status_code >= 400 or not ctype.startswith("image/"):
             return False
 
-        # maximale Größe ~6MB
         cl = img_resp.headers.get("Content-Length")
         if cl and cl.isdigit() and int(cl) > 6_000_000:
             return False
@@ -236,11 +212,9 @@ def fetch_and_cache_product_image(artikel: Artikel) -> bool:
 
         with open(out_path, "wb") as f:
             for chunk in img_resp.iter_content(chunk_size=8192):
-                if not chunk:
-                    continue
+                if not chunk: continue
                 f.write(chunk)
 
-        # in DB merken
         artikel.image_filename = fname
         db.session.commit()
         return True
@@ -267,7 +241,7 @@ def index():
         barcode_id = art.barcode_filename[:-4]
         ensure_barcode_image(barcode_id)
 
-    # Optional: Für die ersten N Artikel Bildcache anstoßen (keine harte Blockade dank Timeouts)
+    # Für die ersten N Artikel Bildcache anstoßen (Timeouts verhindern Blockade)
     for art in artikel[:20]:
         ensure_product_image_cached(art)
 
@@ -298,7 +272,6 @@ def add():
         db.session.add(artikel)
         db.session.commit()  # ID nötig für Dateiname
 
-        # nach dem Anlegen direkt versuchen, Produktbild zu holen (timeouts begrenzen Block)
         try:
             fetch_and_cache_product_image(artikel)
         except Exception as e:
@@ -320,7 +293,6 @@ def edit(id):
 
         db.session.commit()
 
-        # Wenn Bestelllink geändert wurde und noch kein Bild vorhanden: nochmal versuchen
         if artikel.bestelllink and not artikel.image_filename:
             try:
                 fetch_and_cache_product_image(artikel)
@@ -346,7 +318,6 @@ def update(id):
 @app.route('/delete/<int:id>', methods=['POST'])
 def delete(id):
     artikel = Artikel.query.get_or_404(id)
-    # optional: Bilddatei löschen
     if artikel.image_filename:
         path = os.path.join(app.config['PRODUCT_IMG_FOLDER'], artikel.image_filename)
         try:
@@ -396,13 +367,12 @@ def barcodes():
     else:
         gefiltert = alle_artikel
 
-    # „Neue Artikel“: letzte 7 Tage (funktioniert auch in SQLite dank ensure_column)
+    # „Neue Artikel“: letzte 7 Tage
     eine_woche = datetime.utcnow() - timedelta(days=7)
     try:
-        neue_artikel = Artikel.query.filter(Artikel.created_at >= eine_woche)\
+        neue_artikel = Artikel.query.filter(Artikel.created_at >= eine_woche) \
                                     .order_by(Artikel.created_at.desc()).all()
     except Exception:
-        # Fallback, falls alte DB ohne Spalte (sehr unwahrscheinlich, da ensure_column)
         neue_artikel = Artikel.query.order_by(Artikel.id.desc()).limit(5).all()
 
     # QR sicherstellen
@@ -412,7 +382,7 @@ def barcodes():
 
     return render_template('barcodes.html', artikel=gefiltert, neue_artikel=neue_artikel, suchbegriff=query)
 
-# Starten
+# Starten (lokal nützlich; auf Render wird python app.py ohne debug gestartet)
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
