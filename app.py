@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, Response
 from flask_sqlalchemy import SQLAlchemy
 import os
 import uuid
@@ -6,11 +6,11 @@ import qrcode
 import smtplib
 from email.mime.text import MIMEText
 from sqlalchemy import text
-from datetime import datetime  # Für created_at
+from datetime import datetime
 
 # 🔧 Mailkonfiguration
 ABSENDER_EMAIL = "lager.servicefrick@gmail.com"
-ABSENDER_PASSWORT = "Haesler4313!"  # ❗ Tipp: In produktiven Umgebungen .env verwenden!
+ABSENDER_PASSWORT = "Haesler4313!"  # ❗ In produktiven Umgebungen .env verwenden
 EMPFÄNGER_EMAIL = "service@haesler-ag.ch"
 
 # 🔧 Flask App
@@ -37,19 +37,27 @@ with app.app_context():
     except Exception as e:
         print("⚠️ Fehler beim Hinzufügen der Spalte 'bestelllink':", e)
 
-# 🔧 Spalte "created_at" sicherstellen
+# 🔧 Spalte "created_at" (PostgreSQL-kompatibel)
 with app.app_context():
     try:
         db.session.execute(text("""
-            ALTER TABLE artikel 
-            ADD COLUMN IF NOT EXISTS created_at DATETIME DEFAULT CURRENT_TIMESTAMP;
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name='artikel' AND column_name='created_at'
+                ) THEN
+                    ALTER TABLE artikel ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+                END IF;
+            END;
+            $$;
         """))
         db.session.commit()
         print("✅ Spalte 'created_at' vorhanden oder hinzugefügt.")
     except Exception as e:
         print("⚠️ Fehler beim Hinzufügen der Spalte 'created_at':", e)
 
-# 🔧 QR-Code bei Bedarf erzeugen
+# 🔧 QR-Code erzeugen
 def ensure_barcode_image(barcode_id):
     path = os.path.join(app.config['UPLOAD_FOLDER'], f"{barcode_id}.png")
     if not os.path.exists(path):
@@ -64,7 +72,7 @@ def ensure_barcode_image(barcode_id):
         img = qr.make_image(fill_color="black", back_color="white")
         img.save(path)
 
-# 🔧 Mail senden bei Mindestbestand
+# 🔧 E-Mail bei Mindestbestand
 def sende_warnung(artikel):
     if artikel.bestand == artikel.mindestbestand:
         nachricht = f"""Achtung: Der Artikel "{artikel.name}" hat den Mindestbestand erreicht!
@@ -96,7 +104,7 @@ class Artikel(db.Model):
     bestelllink = db.Column(db.String(300), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-# 🔧 Startseite – alphabetisch sortiert
+# 🔧 Startseite
 @app.route('/')
 def index():
     artikel = Artikel.query.order_by(Artikel.name.asc()).all()
@@ -166,12 +174,12 @@ def delete(id):
     db.session.commit()
     return redirect(url_for('index'))
 
-# 🔧 QR-Scan
+# 🔧 Scanseite
 @app.route('/scan')
 def scan():
     return render_template('scan.html')
 
-# 🔧 QR-Code Anpassung
+# 🔧 Barcode-Anpassung
 @app.route('/adjust_barcode/<barcode_id>', methods=['GET', 'POST'])
 def adjust_barcode(barcode_id):
     artikel = Artikel.query.filter(Artikel.barcode_filename == f"{barcode_id}.png").first()
@@ -189,7 +197,7 @@ def adjust_barcode(barcode_id):
         return redirect(url_for('index'))
     return render_template('adjust.html', artikel=artikel)
 
-# 🔧 Barcode/Etiketten Seite
+# 🔧 Barcode-Seite
 @app.route('/barcodes')
 def barcodes():
     artikel = Artikel.query.order_by(Artikel.name.asc()).all()
@@ -199,7 +207,7 @@ def barcodes():
         ensure_barcode_image(barcode_id)
     return render_template('barcodes.html', artikel=artikel, neue_artikel=neue_artikel)
 
-# 🔧 Start
+# 🔧 App starten
 if __name__ == '__main__':
     os.makedirs('static/barcodes', exist_ok=True)
     with app.app_context():
