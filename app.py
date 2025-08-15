@@ -6,7 +6,7 @@ import qrcode
 import smtplib
 from email.mime.text import MIMEText
 from sqlalchemy import text
-from datetime import datetime  # 🆕 Wichtig für created_at
+from datetime import datetime  # Für created_at
 
 # 🔧 Mailkonfiguration
 ABSENDER_EMAIL = "lager.servicefrick@gmail.com"
@@ -37,7 +37,7 @@ with app.app_context():
     except Exception as e:
         print("⚠️ Fehler beim Hinzufügen der Spalte 'bestelllink':", e)
 
-# 🔧 Spalte "created_at" sicherstellen (🆕 NEU)
+# 🔧 Spalte "created_at" sicherstellen
 with app.app_context():
     try:
         db.session.execute(text("""
@@ -79,7 +79,7 @@ Lagerplatz: {artikel.lagerplatz or 'nicht angegeben'}"""
         msg['To'] = EMPFÄNGER_EMAIL
 
         try:
-            with smtpllib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
                 server.login(ABSENDER_EMAIL, ABSENDER_PASSWORT)
                 server.send_message(msg)
         except Exception as e:
@@ -94,7 +94,7 @@ class Artikel(db.Model):
     barcode_filename = db.Column(db.String(100), nullable=False)
     lagerplatz = db.Column(db.String(100), nullable=True)
     bestelllink = db.Column(db.String(300), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # 🆕 hinzugefügt
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # 🔧 Startseite – alphabetisch sortiert
 @app.route('/')
@@ -192,11 +192,12 @@ def adjust_barcode(barcode_id):
 # 🔧 Barcode/Etiketten Seite
 @app.route('/barcodes')
 def barcodes():
-    artikel = Artikel.query.all()
+    artikel = Artikel.query.order_by(Artikel.name.asc()).all()
+    neue_artikel = Artikel.query.order_by(Artikel.created_at.desc()).limit(5).all()
     for art in artikel:
         barcode_id = art.barcode_filename[:-4]
         ensure_barcode_image(barcode_id)
-    return render_template('barcodes.html', artikel=artikel)
+    return render_template('barcodes.html', artikel=artikel, neue_artikel=neue_artikel)
 
 # 🔧 Start
 if __name__ == '__main__':
