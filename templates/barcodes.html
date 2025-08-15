@@ -3,107 +3,77 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Etiketten – QR Avery L4743REV</title>
+  <title>Etiketten drucken</title>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-      font-size: 12px;
-      background: #fff;
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;background:#fff;color:#222}
+    .top{position:sticky;top:0;z-index:5;background:#fafafa;border-bottom:1px solid #e5e5e5;padding:10px}
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .btn{padding:6px 12px;border:none;border-radius:5px;background:#eee;cursor:pointer}
+    .btn-blue{background:#007BFF;color:#fff}
+    .btn-teal{background:#17a2b8;color:#fff}
+    .btn-grey{background:#6c757d;color:#fff}
+    .btn-green{background:#28a745;color:#fff}
+    .btn-amber{background:#ffc107;color:#000}
+    input[type="text"],input[type="number"]{padding:6px 8px;border:1px solid #ccc;border-radius:4px}
+    .hint{margin:6px 2px 0;color:#555}
+
+    .neu-panel{margin:10px;padding:10px;background:#f8f9fa;border:1px solid #ddd;border-radius:5px}
+    .neu-e{margin-bottom:6px}
+    .neu-e img{height:38px;vertical-align:middle;margin-right:8px}
+
+    .list{padding:10px}
+    .item{display:flex;align-items:center;gap:10px;border-bottom:1px solid #eee;padding:8px 0}
+    .chk{transform:scale(1.2)}
+    .prev{width:40px;height:40px;border:1px solid #ddd;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#fff;overflow:hidden}
+    .prev img{max-width:100%;max-height:100%;display:block}
+    .name{font-weight:700}
+    .meta{font-size:12px;color:#666}
+    .hidden{display:none!important}
+
+    @media print{
+      .top,.neu-panel,.list{display:none!important}
+      /* Das Pop-up übernimmt den Druck; dieser Body druckt nichts */
     }
-
-    /* ---- Toolbar ---- */
-    .noprint { padding: 10px; border-bottom: 1px solid #e5e5e5; background:#fafafa; position: sticky; top: 0; z-index: 5; }
-    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .btn { padding: 6px 12px; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-block; background:#f0f0f0; }
-    .btn-blue { background:#007BFF; color:#fff; }
-    .btn-teal { background:#17a2b8; color:#fff; }
-    .btn-grey { background:#6c757d; color:#fff; }
-    .btn-green { background:#28a745; color:#fff; }
-    .btn-amber { background:#ffc107; color:#000; }
-    .toolbar input[type="text"], .toolbar input[type="number"] {
-      padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px;
-    }
-    .hint { margin:6px 0 0 2px; color:#555 }
-
-    /* ---- Info „Zuletzt hinzugefügt“ ---- */
-    .neu-artikel { margin: 10px; padding: 10px; background: #f8f9fa; border: 1px solid #ccc; border-radius: 5px; }
-    .neu-eintrag { margin-bottom: 6px; }
-    .neu-eintrag img { height: 42px; vertical-align: middle; margin-right: 10px; }
-
-    /* ---- Bildschirm-Liste (interaktiv) ---- */
-    .screen-list { padding: 10px; }
-    .item { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #eee; padding: 8px 0; }
-    .item .chk { transform: scale(1.2); }
-    .item .preview { width: 38px; height: 38px; border:1px solid #ddd; border-radius:4px; display:flex; align-items:center; justify-content:center; overflow:hidden; background:#fff; }
-    .item .preview img { max-width:100%; max-height:100%; display:block; }
-    .item .name { font-weight: bold; }
-    .item .meta { color:#666; font-size: 11px; }
-
-    .hidden { display: none !important; }
-
-    /* ---- Druckraster (nur im Druck sichtbar) ---- */
-    @media print {
-      .noprint, .screen-list, .neu-artikel { display: none !important; }
-      .print-area { display: block !important; }
-    }
-    .print-area { display: none; } /* am Bildschirm versteckt */
-
-    /* Avery L4743REV – 2 Spalten × 6 Reihen = 12 Etiketten */
-    .seite {
-      height: 297mm; width: 210mm;
-      padding: 21.5mm 7mm;
-      box-sizing: border-box;
-      display: grid;
-      grid-template-columns: repeat(2, 99.1mm);
-      grid-template-rows: repeat(6, 42.3mm);
-      gap: 0mm 2.5mm;
-      page-break-after: always;
-    }
-    .etikett {
-      box-sizing: border-box; padding: 3mm 2mm; text-align: center; overflow: hidden;
-    }
-    .etikett img { height: 32mm; max-width: 100%; margin: 2mm 0 1mm; }
-    .meta-label { font-size: 10px; color: #555; line-height: 1.2; }
-    .badge { display:inline-block; padding:2px 6px; border-radius:4px; background:#eee; font-size:10px; color:#333; }
   </style>
+  <noscript>
+    <div style="padding:10px;background:#ffe8e8;border-bottom:1px solid #f5aaaa;">
+      Diese Seite benötigt JavaScript (aktivieren, dann neu laden).
+    </div>
+  </noscript>
 </head>
 <body>
 
-  <!-- Toolbar -->
-  <div class="noprint">
-    <div class="toolbar">
-      <a href="/" class="btn btn-blue">⬅ Zurück</a>
+  <div class="top">
+    <div class="row">
+      <a class="btn btn-blue" href="/">⬅ Zurück</a>
 
-      <input type="text" id="suchfeld" placeholder="🔍 Suche: Name, ID, Lagerplatz …" oninput="filterList()">
+      <input id="q" type="text" placeholder="🔍 Suche: Name, ID, Lagerplatz …">
+      <button class="btn btn-teal" id="btnNeu">🆕 Nur neue</button>
+      <button class="btn btn-grey" id="btnAlle">📦 Alle</button>
 
-      <button type="button" class="btn btn-teal" onclick="switchMode('neu')">🆕 Nur neue</button>
-      <button type="button" class="btn btn-grey" onclick="switchMode('alle')">📦 Alle</button>
+      <button class="btn btn-grey" id="btnSelAll">☑️ Sichtbare auswählen</button>
+      <button class="btn btn-grey" id="btnSelNone">🔲 Auswahl aufheben</button>
 
-      <button type="button" class="btn btn-grey" onclick="selectVisible(true)">☑️ Sichtbare auswählen</button>
-      <button type="button" class="btn btn-grey" onclick="selectVisible(false)">🔲 Auswahl aufheben</button>
+      <label for="copies">Kopien:</label>
+      <input id="copies" type="number" min="1" value="1" style="width:74px">
 
-      <label for="kopien">Kopien pro ausgewähltem Etikett:</label>
-      <input type="number" id="kopien" min="1" value="1" style="width:70px">
-
-      <button type="button" class="btn btn-amber" onclick="buildAndPrint(true)">✅ Nur Auswahl drucken</button>
-      <button type="button" class="btn btn-green" onclick="buildAndPrint(false)">🖨️ Jetzt drucken</button>
+      <button class="btn btn-amber" id="btnPrintSel">✅ Nur Auswahl drucken</button>
+      <button class="btn btn-green" id="btnPrintAll">🖨️ Jetzt drucken</button>
     </div>
-    <p class="hint">Druckeinstellungen: A4 · 100 % · Keine Ränder · Hintergrundgrafiken ✅</p>
+    <p class="hint">Druckeinstellungen (im Pop-up): A4 · 100 % · Keine Ränder · Hintergrundgrafiken ✅</p>
   </div>
 
-  <!-- Info „Zuletzt hinzugefügt“ -->
-  <div class="noprint neu-artikel">
+  <!-- Zuletzt hinzugefügt -->
+  <div class="neu-panel" id="panelNeu">
     <strong>🆕 Zuletzt hinzugefügt</strong>
     <div>
       {% if neue_artikel %}
         {% for art in neue_artikel %}
-          <div class="neu-eintrag">
-            <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="Barcode">
+          <div class="neu-e">
+            <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="QR">
             <strong>{{ art.name }}</strong>
             <small>
-              &nbsp;|&nbsp;ID: {{ art.barcode_filename[:-4] }}&nbsp;|&nbsp;
+              &nbsp;| ID: {{ art.barcode_filename[:-4] }} |
               Hinzugefügt:
               {% if art.created_at and art.created_at.strftime %}
                 {{ art.created_at.strftime('%d.%m.%Y %H:%M') }}
@@ -117,160 +87,179 @@
     </div>
   </div>
 
-  <!-- Bildschirm-Liste: ALLE -->
-  <div id="list-alle" class="screen-list">
+  <!-- Alle Artikel (Bildschirmliste) -->
+  <div id="listAlle" class="list">
     {% for art in artikel %}
       <div class="item"
-           data-name="{{ art.name|lower }}"
+           data-name="{{ (art.name or '')|lower }}"
            data-id="{{ art.barcode_filename[:-4]|lower }}"
            data-lagerplatz="{{ (art.lagerplatz or '')|lower }}">
-        <input type="checkbox" class="chk">
-        <div class="preview">
+        <input class="chk" type="checkbox">
+        <div class="prev">
           <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="QR">
         </div>
         <div>
           <div class="name">{{ art.name }}</div>
           <div class="meta">
-            <span>ID: {{ art.barcode_filename[:-4] }}</span>
-            {% if art.lagerplatz %} &nbsp;•&nbsp; <span>Lagerplatz: {{ art.lagerplatz }}</span>{% endif %}
+            ID: {{ art.barcode_filename[:-4] }}
+            {% if art.lagerplatz %} · Lagerplatz: {{ art.lagerplatz }}{% endif %}
           </div>
         </div>
       </div>
     {% endfor %}
   </div>
 
-  <!-- Bildschirm-Liste: NUR neue -->
-  <div id="list-neu" class="screen-list hidden">
+  <!-- Nur neue (Bildschirmliste) -->
+  <div id="listNeu" class="list hidden">
     {% for art in neue_artikel %}
       <div class="item"
-           data-name="{{ art.name|lower }}"
+           data-name="{{ (art.name or '')|lower }}"
            data-id="{{ art.barcode_filename[:-4]|lower }}"
            data-lagerplatz="{{ (art.lagerplatz or '')|lower }}">
-        <input type="checkbox" class="chk">
-        <div class="preview">
+        <input class="chk" type="checkbox">
+        <div class="prev">
           <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="QR">
         </div>
         <div>
           <div class="name">{{ art.name }}</div>
           <div class="meta">
-            <span>ID: {{ art.barcode_filename[:-4] }}</span>
-            {% if art.lagerplatz %} &nbsp;•&nbsp; <span>Lagerplatz: {{ art.lagerplatz }}</span>{% endif %}
+            ID: {{ art.barcode_filename[:-4] }}
+            {% if art.lagerplatz %} · Lagerplatz: {{ art.lagerplatz }}{% endif %}
           </div>
         </div>
       </div>
     {% endfor %}
   </div>
 
-  <!-- Druck-Container (wird per JS gefüllt) -->
-  <div id="print-area" class="print-area"></div>
-
   <script>
-    var mode = 'alle'; // 'alle' | 'neu'
+    (function(){
+      // Elemente
+      var q = document.getElementById('q');
+      var listAlle = document.getElementById('listAlle');
+      var listNeu  = document.getElementById('listNeu');
+      var panelNeu = document.getElementById('panelNeu');
 
-    function switchMode(m) {
-      mode = m;
-      document.getElementById('list-alle').classList.toggle('hidden', m !== 'alle');
-      document.getElementById('list-neu').classList.toggle('hidden', m !== 'neu');
-      filterList(); // Filter nach Umschalten erneut anwenden
-      window.scrollTo(0,0);
-    }
+      // Modus
+      var mode = 'alle'; // 'alle' | 'neu'
 
-    function currentList() {
-      return (mode === 'neu') ? document.getElementById('list-neu') : document.getElementById('list-alle');
-    }
+      // Helfer
+      function currentList(){ return mode === 'neu' ? listNeu : listAlle; }
 
-    function filterList() {
-      var q = (document.getElementById('suchfeld').value || '').toLowerCase();
-      var list = currentList();
-      var items = list.querySelectorAll('.item');
-      for (var i=0; i<items.length; i++) {
-        var it = items[i];
-        var name = it.getAttribute('data-name') || '';
-        var id = it.getAttribute('data-id') || '';
-        var lp = it.getAttribute('data-lagerplatz') || '';
-        var show = !q || name.indexOf(q) !== -1 || id.indexOf(q) !== -1 || lp.indexOf(q) !== -1;
-        it.style.display = show ? '' : 'none';
+      function applyFilter(){
+        var query = (q.value || '').toLowerCase().trim();
+        var items = currentList().querySelectorAll('.item');
+        for (var i=0;i<items.length;i++){
+          var it = items[i];
+          var n = it.getAttribute('data-name') || '';
+          var id = it.getAttribute('data-id') || '';
+          var lp = it.getAttribute('data-lagerplatz') || '';
+          var show = !query || n.indexOf(query) !== -1 || id.indexOf(query) !== -1 || lp.indexOf(query) !== -1;
+          it.style.display = show ? '' : 'none';
+        }
       }
-    }
 
-    function selectVisible(checked) {
-      var list = currentList();
-      var items = list.querySelectorAll('.item');
-      for (var i=0; i<items.length; i++) {
-        var it = items[i];
-        if (it.style.display !== 'none') {
+      function setMode(m){
+        mode = m;
+        listAlle.classList.toggle('hidden', m !== 'alle');
+        listNeu.classList.toggle('hidden', m !== 'neu');
+        panelNeu.style.display = (m === 'neu') ? '' : '';
+        applyFilter();
+        window.scrollTo(0,0);
+      }
+
+      function selectVisible(flag){
+        var items = currentList().querySelectorAll('.item');
+        for (var i=0;i<items.length;i++){
+          var it = items[i];
+          if (it.style.display === 'none') continue;
           var cb = it.querySelector('.chk');
-          if (cb) cb.checked = checked;
-        }
-      }
-    }
-
-    function buildAndPrint(onlySelected) {
-      var list = currentList();
-      var items = list.querySelectorAll('.item');
-      var kopien = parseInt(document.getElementById('kopien').value, 10);
-      if (isNaN(kopien) || kopien < 1) kopien = 1;
-
-      var rows = [];
-      for (var i=0; i<items.length; i++) {
-        var it = items[i];
-        if (it.style.display === 'none') continue;
-        var cb = it.querySelector('.chk');
-        if (onlySelected && (!cb || !cb.checked)) continue;
-
-        var name = it.getAttribute('data-name') || '';
-        // Für Druck den originalen (nicht-lowercase) Namen verwenden:
-        var nameText = it.querySelector('.name') ? it.querySelector('.name').textContent : name;
-        var id = it.getAttribute('data-id') || '';
-        var lp = it.getAttribute('data-lagerplatz') || '';
-        var img = it.querySelector('img') ? it.querySelector('img').getAttribute('src') : '';
-
-        for (var k=0; k<kopien; k++) {
-          rows.push({name: nameText, id: id, lp: lp, img: img});
+          if (cb) cb.checked = flag;
         }
       }
 
-      if (rows.length === 0) {
-        alert(onlySelected ? 'Bitte wähle mindestens ein Etikett aus.' : 'Keine Etiketten gefunden.');
-        return;
-      }
+      function collectRows(onlySelected){
+        var list = currentList();
+        var items = list.querySelectorAll('.item');
+        var rows = [];
+        var copies = parseInt(document.getElementById('copies').value,10);
+        if (isNaN(copies) || copies < 1) copies = 1;
 
-      // Druckraster aufbauen
-      var container = document.getElementById('print-area');
-      container.innerHTML = '';
-      for (var p=0; p<rows.length; p+=12) {
-        var seite = document.createElement('div');
-        seite.className = 'seite';
-        var slice = rows.slice(p, p+12);
-        for (var j=0; j<slice.length; j++) {
-          var it = slice[j];
-          var card = document.createElement('div');
-          card.className = 'etikett';
-          card.innerHTML =
-            '<strong>' + esc(it.name) + '</strong><br>' +
-            '<img src="' + esc(it.img) + '" alt="Barcode"><br>' +
-            '<div class="meta-label">' +
-              '<span class="badge">ID: ' + esc(it.id) + '</span>' +
-              (it.lp ? '&nbsp;•&nbsp;Lagerplatz: ' + esc(it.lp) : '') +
-            '</div>';
-          seite.appendChild(card);
+        for (var i=0;i<items.length;i++){
+          var it = items[i];
+          if (it.style.display === 'none') continue;
+          var cb = it.querySelector('.chk');
+          if (onlySelected && (!cb || !cb.checked)) continue;
+
+          var name = it.querySelector('.name') ? it.querySelector('.name').textContent : '';
+          var id   = it.getAttribute('data-id') || '';
+          var lp   = it.getAttribute('data-lagerplatz') || '';
+          var img  = it.querySelector('img') ? it.querySelector('img').getAttribute('src') : '';
+
+          for (var c=0;c<copies;c++){
+            rows.push({name:name,id:id,lp:lp,img:img});
+          }
         }
-        container.appendChild(seite);
+        return rows;
       }
 
-      // Drucken
-      window.print();
-    }
+      function openPrintWindow(rows){
+        if (!rows.length){ alert('Keine Etiketten zum Drucken.'); return; }
+        var w = window.open('', '_blank');
+        var html = [];
+        html.push('<!DOCTYPE html><html><head><meta charset="utf-8">');
+        html.push('<title>Druck</title>');
+        // Avery-Raster
+        html.push('<style>@page{size:A4;margin:0;}body{margin:0;font-family:Arial,sans-serif;font-size:12px;}');
+        html.push('.seite{height:297mm;width:210mm;padding:21.5mm 7mm;box-sizing:border-box;display:grid;grid-template-columns:repeat(2,99.1mm);grid-template-rows:repeat(6,42.3mm);gap:0mm 2.5mm;page-break-after:always;}');
+        html.push('.etikett{box-sizing:border-box;padding:3mm 2mm;text-align:center;overflow:hidden;}');
+        html.push('.etikett img{height:32mm;max-width:100%;margin:2mm 0 1mm;}');
+        html.push('.meta{font-size:10px;color:#555;line-height:1.2;} .badge{display:inline-block;padding:2px 6px;border-radius:4px;background:#eee;font-size:10px;color:#333;}');
+        html.push('</style></head><body>');
 
-    function esc(str) {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g,'&amp;')
-        .replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;')
-        .replace(/'/g,'&#039;');
-    }
+        for (var i=0;i<rows.length;i+=12){
+          html.push('<div class="seite">');
+          var slice = rows.slice(i,i+12);
+          for (var j=0;j<slice.length;j++){
+            var it = slice[j];
+            html.push('<div class="etikett">');
+            html.push('<strong>'+esc(it.name)+'</strong><br>');
+            html.push('<img src="'+esc(it.img)+'" alt="QR"><br>');
+            html.push('<div class="meta"><span class="badge">ID: '+esc(it.id)+'</span>');
+            if (it.lp){ html.push('&nbsp;•&nbsp;Lagerplatz: '+esc(it.lp)); }
+            html.push('</div></div>');
+          }
+          html.push('</div>');
+        }
+
+        html.push('</body></html>');
+        w.document.open(); w.document.write(html.join('')); w.document.close();
+        // wichtig: kleinen Timeout, damit Bilder laden
+        setTimeout(function(){ w.print(); }, 300);
+      }
+
+      function esc(s){
+        if (!s) return '';
+        return String(s)
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+      }
+
+      // Events binden (kein inline JS nötig)
+      document.getElementById('btnNeu').addEventListener('click', function(){ setMode('neu'); });
+      document.getElementById('btnAlle').addEventListener('click', function(){ setMode('alle'); });
+      document.getElementById('btnSelAll').addEventListener('click', function(){ selectVisible(true); });
+      document.getElementById('btnSelNone').addEventListener('click', function(){ selectVisible(false); });
+      document.getElementById('btnPrintSel').addEventListener('click', function(){
+        openPrintWindow(collectRows(true));
+      });
+      document.getElementById('btnPrintAll').addEventListener('click', function(){
+        openPrintWindow(collectRows(false));
+      });
+      q.addEventListener('input', applyFilter);
+
+      // Initial
+      setMode('alle');
+    })();
   </script>
 </body>
 </html>
