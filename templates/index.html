@@ -165,4 +165,31 @@
             <td data-label="Hinweis">
               {% if art.hinweis %}
                 <div class="note" title="{{ art.hinweis }}">
-                  <span class="badge">⚠
+                  <span class="badge">⚠︎ Hinweis</span>{{ art.hinweis }}
+                </div>
+              {% else %}
+                <span class="muted">–</span>
+              {% endif %}
+            </td>
+            <td data-label="Barcode">
+              <div class="qrbox">
+                <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="QR">
+                <span class="qrid">{{ id_plain }}</span>
+              </div>
+            </td>
+            <td data-label="Aktionen">
+              <a href="{{ url_for('edit', id=art.id) }}" class="btn btn-edit">✏️ Bearbeiten</a>
+              <form action="{{ url_for('delete', id=art.id) }}" method="post" class="inline-form" onsubmit="return confirm('Wirklich löschen?');">
+                <button type="submit" class="btn btn-delete">🗑️ Löschen</button>
+              </form>
+              {% if art.bestelllink %}
+                <a href="{{ art.bestelllink }}" target="_blank" rel="noopener" class="btn btn-order">🔗 Bestellen</a>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>
