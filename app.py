@@ -37,6 +37,7 @@ class Artikel(db.Model):
     barcode_filename = db.Column(db.String(100), nullable=False)
     lagerplatz = db.Column(db.String(100), nullable=True)
     bestelllink = db.Column(db.String(300), nullable=True)
+    hinweis = db.Column(db.Text, nullable=True)  # 🆕 Freitext-Notiz
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # ========= DB-Spalten sicher anlegen (PG & SQLite) =========
@@ -59,7 +60,7 @@ def ensure_column(table: str, column: str, ddl_pg: str, ddl_sqlite: str):
             """))
         else:
             cols = db.session.execute(text(f"PRAGMA table_info({table})")).fetchall()
-            names = [row[1] for row in cols]  # 0:cid, 1:name, ...
+            names = [row[1] for row in cols]
             if column not in names:
                 db.session.execute(text(f"ALTER TABLE {table} ADD COLUMN {ddl_sqlite};"))
         db.session.commit()
@@ -72,6 +73,7 @@ with app.app_context():
     db.create_all()
     ensure_column("artikel", "lagerplatz",   "lagerplatz VARCHAR(100)",  "lagerplatz VARCHAR(100)")
     ensure_column("artikel", "bestelllink",  "bestelllink VARCHAR(300)", "bestelllink VARCHAR(300)")
+    ensure_column("artikel", "hinweis",      "hinweis TEXT",             "hinweis TEXT")  # 🆕
     ensure_column("artikel", "created_at",
                   "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
                   "created_at DATETIME DEFAULT (CURRENT_TIMESTAMP)")
@@ -119,6 +121,7 @@ def add():
         mindestbestand = int(request.form['mindestbestand'])
         lagerplatz = request.form.get('lagerplatz', '')
         bestelllink = request.form.get('bestelllink', '')
+        hinweis = request.form.get('hinweis', '')  # 🆕
 
         barcode_id = str(uuid.uuid4())[:8]
         ensure_barcode_image(barcode_id)
@@ -129,7 +132,8 @@ def add():
             mindestbestand=mindestbestand,
             lagerplatz=lagerplatz,
             barcode_filename=f"{barcode_id}.png",
-            bestelllink=bestelllink
+            bestelllink=bestelllink,
+            hinweis=hinweis
         )
         db.session.add(artikel)
         db.session.commit()
@@ -145,6 +149,7 @@ def edit(id):
         artikel.mindestbestand = int(request.form['mindestbestand'])
         artikel.lagerplatz = request.form.get('lagerplatz', '')
         artikel.bestelllink = request.form.get('bestelllink', '')
+        artikel.hinweis = request.form.get('hinweis', '')  # 🆕
         db.session.commit()
         return redirect(url_for('index') + f"#art-{artikel.id}")
     return render_template('edit.html', artikel=artikel)
@@ -163,7 +168,7 @@ def update(id):
 @app.route('/delete/<int:id>', methods=['POST'])
 def delete(id):
     artikel = Artikel.query.get_or_404(id)
-    # Optional: QR-Datei gleich entfernen
+    # Optional: QR-Datei entfernen
     try:
         pfad = os.path.join(app.config['UPLOAD_FOLDER'], artikel.barcode_filename)
         if os.path.exists(pfad):
@@ -202,14 +207,9 @@ def barcodes():
     date_from = (request.args.get("from", "") or "").strip()
     date_to   = (request.args.get("to", "") or "").strip()
 
-    # Alle Artikel (für „Alle drucken“ + Suche)
     alle = Artikel.query.order_by(Artikel.name.asc()).all()
-    if q:
-        artikel = [a for a in alle if q in (a.name or "").lower()]
-    else:
-        artikel = alle
+    artikel = [a for a in alle if q in (a.name or "").lower()] if q else alle
 
-    # Neue Artikel nach Datum filtern (inklusive)
     neue_q = Artikel.query
     dt_from = None
     dt_to = None
@@ -229,7 +229,6 @@ def barcodes():
     if dt_from or dt_to:
         neue_artikel = neue_q.order_by(Artikel.created_at.desc(), Artikel.id.desc()).all()
     else:
-        # Fallback: letzte 7 Tage oder jüngste 15
         eine_woche = datetime.utcnow() - timedelta(days=7)
         try:
             neue_artikel = Artikel.query.filter(Artikel.created_at >= eine_woche)\
@@ -239,7 +238,6 @@ def barcodes():
         except Exception:
             neue_artikel = Artikel.query.order_by(Artikel.id.desc()).limit(15).all()
 
-    # QR-Bilder sicherstellen (nur wenn fehlen → erzeugt)
     for art in artikel:
         ensure_barcode_image(art.barcode_filename[:-4])
     for art in neue_artikel:
@@ -278,6 +276,7 @@ def export_csv():
         ("mindestbestand",  lambda a: a.mindestbestand),
         ("lagerplatz",      lambda a: a.lagerplatz or ""),
         ("bestelllink",     lambda a: a.bestelllink or ""),
+        ("hinweis",         lambda a: (a.hinweis or "").replace("\n"," ").strip()),  # 🆕
         ("barcode_id",      lambda a: (a.barcode_filename[:-4] if a.barcode_filename else "")),
         ("barcode_filename",lambda a: a.barcode_filename or ""),
         ("created_at",      lambda a: a.created_at.strftime("%Y-%m-%d %H:%M:%S") if a.created_at else ""),
@@ -285,7 +284,6 @@ def export_csv():
 
     artikel = Artikel.query.order_by(Artikel.name.asc()).all()
 
-    # In-Memory CSV schreiben
     sio = StringIO()
     writer = csv.writer(sio, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
     writer.writerow([c[0] for c in cols])
