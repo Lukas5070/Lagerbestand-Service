@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Lagerbestand</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -10,14 +11,9 @@
       padding: 30px;
     }
 
-    h1 {
-      margin-bottom: 20px;
-    }
+    h1 { margin-bottom: 20px; }
 
-    .top-links {
-      margin-bottom: 15px;
-    }
-
+    .top-links { margin-bottom: 15px; }
     .top-links a {
       margin-right: 15px;
       text-decoration: none;
@@ -25,10 +21,7 @@
       font-weight: bold;
     }
 
-    .search-box {
-      margin: 20px 0;
-    }
-
+    .search-box { margin: 20px 0; }
     input[type="text"], select {
       padding: 10px;
       border-radius: 5px;
@@ -48,14 +41,17 @@
       border-bottom: 1px solid #eee;
       text-align: center;
       cursor: default;
+      vertical-align: middle;
     }
 
     th {
       background-color: #007bff;
       color: white;
       cursor: pointer;
+      user-select: none;
     }
 
+    th.nosort { cursor: default; }
     th.asc::after { content: " ▲"; }
     th.desc::after { content: " ▼"; }
 
@@ -68,8 +64,8 @@
       cursor: pointer;
       font-size: 0.9em;
       margin: 2px;
+      display: inline-block;
     }
-
     .btn-edit { background-color: #28a745; }
     .btn-delete { background-color: #dc3545; }
     .btn-order { background-color: #17a2b8; }
@@ -79,54 +75,69 @@
     .status-red { color: #dc3545; font-weight: bold; }
 
     .inline-form { display: inline; }
+
+    /* Bildzelle */
+    .thumb {
+      width: 70px;
+      height: 70px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .thumb img { max-width: 100%; max-height: 100%; display: block; }
   </style>
 
   <script>
     function searchTable() {
-      const searchInput = document.getElementById("searchInput").value.toLowerCase();
-      const filterValue = document.getElementById("statusFilter").value;
+      const q = (document.getElementById("searchInput").value || "").toLowerCase().trim();
+      const filterValue = document.getElementById("statusFilter").value; // 'alle' | 'kritisch' | 'knapp'
       const rows = document.querySelectorAll("table tbody tr");
 
       rows.forEach(row => {
-        const text = row.innerText.toLowerCase();
-        const statusCell = row.querySelector("td:nth-child(4)").innerText.toLowerCase();
+        const name = (row.dataset.name || "");
+        const lp   = (row.dataset.lagerplatz || "");
+        const id   = (row.dataset.id || "");
+        const status = (row.dataset.status || ""); // 'kritisch' | 'knapp' | 'ausreichend'
 
-        const matchesSearch = text.includes(searchInput);
+        const matchesSearch = !q || name.includes(q) || lp.includes(q) || id.includes(q);
+
         let matchesFilter = true;
-
-        if (filterValue === "kritisch" && !statusCell.includes("kritisch")) {
-          matchesFilter = false;
-        } else if (filterValue === "knapp" && !statusCell.includes("knapp")) {
-          matchesFilter = false;
-        }
+        if (filterValue === "kritisch" && status !== "kritisch") matchesFilter = false;
+        if (filterValue === "knapp"    && status !== "knapp")    matchesFilter = false;
 
         row.style.display = (matchesSearch && matchesFilter) ? "" : "none";
       });
     }
 
     function sortTable(columnIndex) {
-      const table = document.querySelector("table tbody");
-      const rows = Array.from(table.rows);
-      const header = document.querySelectorAll("th")[columnIndex];
+      // columnIndex bezieht sich auf die TH/TD-Position in DERZEITIGER Tabelle
+      const tableBody = document.querySelector("table tbody");
+      const rows = Array.from(tableBody.rows);
+      const headers = document.querySelectorAll("thead th");
+      const header = headers[columnIndex];
+      if (header.classList.contains("nosort")) return;
 
       const isAsc = header.classList.contains("asc");
-      document.querySelectorAll("th").forEach(th => th.classList.remove("asc", "desc"));
+      headers.forEach(th => th.classList.remove("asc", "desc"));
 
       rows.sort((a, b) => {
-        const valA = a.cells[columnIndex].innerText.trim().toLowerCase();
-        const valB = b.cells[columnIndex].innerText.trim().toLowerCase();
+        const valA = (a.cells[columnIndex].innerText || "").trim().toLowerCase();
+        const valB = (b.cells[columnIndex].innerText || "").trim().toLowerCase();
 
         const numA = parseFloat(valA.replace(",", "."));
         const numB = parseFloat(valB.replace(",", "."));
 
         if (!isNaN(numA) && !isNaN(numB)) {
-          return isAsc ? numA - numB : numB - numA;
+          return isAsc ? (numA - numB) : (numB - numA);
         }
-
         return isAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
       });
 
-      rows.forEach(row => table.appendChild(row));
+      rows.forEach(row => tableBody.appendChild(row));
       header.classList.toggle("asc", !isAsc);
       header.classList.toggle("desc", isAsc);
     }
@@ -142,7 +153,7 @@
   </div>
 
   <div class="search-box">
-    🔍 <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Artikel oder Lagerplatz suchen...">
+    🔍 <input type="text" id="searchInput" oninput="searchTable()" placeholder="Artikel, Lagerplatz oder Barcode-ID suchen…">
     📊 Filter:
     <select id="statusFilter" onchange="searchTable()">
       <option value="alle">Alle</option>
@@ -154,18 +165,33 @@
   <table>
     <thead>
       <tr>
-        <th onclick="sortTable(0)">Name</th>
-        <th onclick="sortTable(1)">Bestand</th>
-        <th onclick="sortTable(2)">Mindestbestand</th>
-        <th>Status</th>
-        <th onclick="sortTable(4)">Lagerplatz</th>
-        <th>Barcode</th>
-        <th>Aktionen</th>
+        <th class="nosort">Bild</th>
+        <th onclick="sortTable(1)">Name</th>
+        <th onclick="sortTable(2)">Bestand</th>
+        <th onclick="sortTable(3)">Mindestbestand</th>
+        <th class="nosort">Status</th>
+        <th onclick="sortTable(5)">Lagerplatz</th>
+        <th class="nosort">Barcode</th>
+        <th class="nosort">Aktionen</th>
       </tr>
     </thead>
     <tbody>
       {% for art in artikel %}
-      <tr>
+      {% set id_plain = art.barcode_filename[:-4] %}
+      {% set status_txt = 'kritisch' if art.bestand < art.mindestbestand else ('knapp' if art.bestand == art.mindestbestand else 'ausreichend') %}
+      {% set product_img = art.image_filename and url_for('static', filename='product_images/' + art.image_filename) %}
+      {% set qr_img = url_for('static', filename='barcodes/' + art.barcode_filename) %}
+      {% set thumb = product_img or qr_img %}
+      <tr
+        data-name="{{ (art.name or '')|lower }}"
+        data-lagerplatz="{{ (art.lagerplatz or '')|lower }}"
+        data-id="{{ id_plain|lower }}"
+        data-status="{{ status_txt }}">
+        <td>
+          <div class="thumb">
+            <img src="{{ thumb }}" alt="{{ art.name }}">
+          </div>
+        </td>
         <td>{{ art.name }}</td>
         <td>{{ art.bestand }}</td>
         <td>{{ art.mindestbestand }}</td>
@@ -180,7 +206,8 @@
         </td>
         <td>{{ art.lagerplatz or '-' }}</td>
         <td>
-          <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" height="50">
+          <img src="{{ qr_img }}" height="50" alt="QR">
+          <div style="font-size:11px; color:#666; margin-top:4px;">ID: {{ id_plain }}</div>
         </td>
         <td>
           <a href="{{ url_for('edit', id=art.id) }}" class="btn btn-edit">✏️ Bearbeiten</a>
@@ -188,7 +215,7 @@
             <button type="submit" class="btn btn-delete">🗑️</button>
           </form>
           {% if art.bestelllink %}
-            <a href="{{ art.bestelllink }}" target="_blank" class="btn btn-order">🔗 Bestellen</a>
+            <a href="{{ art.bestelllink }}" target="_blank" rel="noopener" class="btn btn-order">🔗 Bestellen</a>
           {% endif %}
         </td>
       </tr>
