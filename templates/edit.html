@@ -78,4 +78,31 @@
           </div>
           <div class="field">
             <label for="mindestbestand">Mindestbestand</label>
-            <input id="mindestbestand" name="mindestbestand" type="number" inputmode="numeric" min
+            <input id="mindestbestand" name="mindestbestand" type="number" inputmode="numeric" min="0" step="1" required value="{{ artikel.mindestbestand }}">
+          </div>
+          <div class="field">
+            <label for="lagerplatz">Lagerplatz</label>
+            <input id="lagerplatz" name="lagerplatz" type="text" value="{{ artikel.lagerplatz or '' }}" placeholder="z. B. Regal 2 Fach 7">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="bestelllink">Bestelllink (optional)</label>
+          <input id="bestelllink" name="bestelllink" type="url" value="{{ artikel.bestelllink or '' }}" placeholder="https://…">
+        </div>
+
+        <div class="field note">
+          <label for="hinweis">Hinweis (optional)</label>
+          <textarea id="hinweis" name="hinweis" placeholder="z. B. ‚Ausgelaufen – nur Restbestand‘, Ersatz durch Artikel XY.">{{ artikel.hinweis or '' }}</textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-save" type="submit">💾 Speichern</button>
+        <a class="btn btn-cancel" href="{{ url_for('index') }}#art-{{ artikel.id }}">✖️ Abbrechen</a>
+      </div>
+      <div class="hint">Tipp: Nutze das Hinweis-Feld für Besonderheiten wie *ausgelaufen*, *nur Restbestand*, *Ersatzteilnummer*, etc.</div>
+    </form>
+  </div>
+</body>
+</html>
