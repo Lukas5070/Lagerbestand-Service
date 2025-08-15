@@ -76,18 +76,28 @@
       color: #666;
       font-size: 10px;
     }
+
+    .druckbereich {
+      display: block;
+    }
+
+    .druckbereich.ausblenden {
+      display: none;
+    }
   </style>
 </head>
 <body>
 
-  <!-- Steuerelemente oben -->
+  <!-- Steuerelemente -->
   <div class="noprint">
     <a href="/" style="padding:6px 12px; background:#007BFF; color:#fff; text-decoration:none; border-radius:5px;">⬅ Zurück</a>
-    <button onclick="window.print()" style="padding:6px 12px; background:#28a745; color:#fff; border:none; border-radius:5px;">🖨️ Drucken</button>
+    <button onclick="zeigeNurNeue()" style="padding:6px 12px; background:#17a2b8; color:#fff; border:none; border-radius:5px;">🖨️ Nur neue Etiketten drucken</button>
+    <button onclick="zeigeAlle()" style="padding:6px 12px; background:#6c757d; color:#fff; border:none; border-radius:5px;">📦 Alle Etiketten drucken</button>
+    <button onclick="window.print()" style="padding:6px 12px; background:#28a745; color:#fff; border:none; border-radius:5px;">🖨️ Jetzt drucken</button>
     <p style="margin-top:10px;">Druckeinstellungen: A4 · 100 % · Keine Ränder · Hintergrundgrafiken ✅</p>
   </div>
 
-  <!-- Zuletzt hinzugefügte Artikel -->
+  <!-- Zuletzt hinzugefügte Artikel (nicht druckbar) -->
   <div class="noprint neu-artikel">
     <h2>🆕 Zuletzt hinzugefügte Artikel</h2>
     {% if neue_artikel %}
@@ -103,18 +113,48 @@
     {% endif %}
   </div>
 
-  <!-- Alle Etiketten für den Druck -->
-  {% for i in range(0, artikel|length, 12) %}
-    <div class="seite">
-      {% for art in artikel[i:i+12] %}
-        <div class="etikett">
-          <strong>{{ art.name }}</strong><br>
-          <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}"><br>
-          <small>{{ art.barcode_filename[:-4] }}</small>
-        </div>
-      {% endfor %}
-    </div>
-  {% endfor %}
+  <!-- Etiketten: NUR neue Artikel -->
+  <div id="nur-neue" class="druckbereich ausblenden">
+    {% for i in range(0, neue_artikel|length, 12) %}
+      <div class="seite">
+        {% for art in neue_artikel[i:i+12] %}
+          <div class="etikett">
+            <strong>{{ art.name }}</strong><br>
+            <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}"><br>
+            <small>{{ art.barcode_filename[:-4] }}</small>
+          </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Etiketten: ALLE Artikel -->
+  <div id="alle-artikel" class="druckbereich">
+    {% for i in range(0, artikel|length, 12) %}
+      <div class="seite">
+        {% for art in artikel[i:i+12] %}
+          <div class="etikett">
+            <strong>{{ art.name }}</strong><br>
+            <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}"><br>
+            <small>{{ art.barcode_filename[:-4] }}</small>
+          </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Umschalter -->
+  <script>
+    function zeigeNurNeue() {
+      document.getElementById('nur-neue').classList.remove('ausblenden');
+      document.getElementById('alle-artikel').classList.add('ausblenden');
+    }
+
+    function zeigeAlle() {
+      document.getElementById('nur-neue').classList.add('ausblenden');
+      document.getElementById('alle-artikel').classList.remove('ausblenden');
+    }
+  </script>
 
 </body>
 </html>
