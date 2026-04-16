@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ app_title }}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <div class="site-shell">
+    <header class="site-header">
+      <div class="brand-block">
+        <p class="brand-kicker">{{ company_name }}</p>
+        <a class="brand-title" href="{{ url_for('index') }}">{{ app_title }}</a>
+        <p class="brand-subtitle">Bestand, Scan und Etikettendruck in einer gemeinsamen Oberfläche.</p>
+      </div>
+
+      <nav class="site-nav">
+        <a class="nav-link{% if request.endpoint == 'index' %} active{% endif %}" href="{{ url_for('index') }}">Übersicht</a>
+        <a class="nav-link{% if request.endpoint == 'add' %} active{% endif %}" href="{{ url_for('add') }}">Artikel hinzufügen</a>
+        <a class="nav-link{% if request.endpoint == 'duplicates' %} active{% endif %}" href="{{ url_for('duplicates') }}">Dubletten</a>
+        <a class="nav-link{% if request.endpoint == 'barcodes' %} active{% endif %}" href="{{ url_for('barcodes') }}">Barcodes drucken</a>
+        <a class="nav-link{% if request.endpoint == 'scan' %} active{% endif %}" href="{{ url_for('scan') }}">Scannen</a>
+        <a class="nav-link" href="{{ url_for('export_csv', sep='semicolon', encoding='utf-8', bom=1) }}">CSV-Export</a>
+      </nav>
+    </header>
+
+    <main class="content-shell">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <section class="flash-list">
+            {% for category, message in messages %}
+              <div class="alert alert-{{ 'error' if category == 'error' else category }}">
+                <span class="alert-title">
+                  {% if category == 'success' %}Erfolg{% elif category == 'warning' %}Hinweis{% else %}Fehler{% endif %}
+                </span>
+                <div>{{ message }}</div>
+              </div>
+            {% endfor %}
+          </section>
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+      {{ company_name }} · dieselbe Codebasis kann mit getrennten Datenbanken und Render-Deployments betrieben werden.
+    </footer>
+  </div>
+
+  <div id="global-print-root"></div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

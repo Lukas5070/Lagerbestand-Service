@@ -1,0 +1,73 @@
+<form method="post" class="stack-md" novalidate>
+  {% if duplicate_matches %}
+    <div class="alert alert-warning">
+      <span class="alert-title">Mögliche Dublette erkannt</span>
+      <p>
+        Für diesen Artikelnamen existieren bereits {{ duplicate_matches|length }} Treffer mit identischem normalisiertem Namen.
+        Speichern bleibt erlaubt.
+      </p>
+
+      <div class="duplicate-list">
+        {% for match in duplicate_matches %}
+          <a class="duplicate-item" href="{{ url_for('edit', id=match.id) }}">
+            <strong>#{{ match.id }} · {{ match.name }}</strong>
+            <span>Barcode {{ match.barcode_id }} · Lagerplatz {{ match.lagerplatz or '–' }} · Bestand {{ match.bestand }}</span>
+            <span>Erstellt {{ match.created_at|datetime_display }}</span>
+          </a>
+        {% endfor %}
+      </div>
+
+      <p class="field-help">
+        {% if requires_duplicate_confirmation %}
+          Prüfe die Liste kurz und klicke dann erneut auf „{{ confirm_submit_label|default('Trotzdem speichern') }}“, wenn die Dublette fachlich korrekt ist.
+        {% else %}
+          Die Warnung dient nur zur Prüfung. Eine automatische Zusammenführung findet nicht statt.
+        {% endif %}
+      </p>
+    </div>
+  {% endif %}
+
+  {% if requires_duplicate_confirmation %}
+    <input type="hidden" name="confirm_duplicate" value="1">
+  {% endif %}
+
+  <div class="form-grid form-grid-2">
+    <div class="field">
+      <label for="name">Artikelname</label>
+      <input id="name" name="name" type="text" required value="{{ form_data.name }}" autocomplete="off" spellcheck="false">
+      <p class="field-help">Dubletten werden auf Basis von Kleinschreibung und bereinigten Leerzeichen erkannt.</p>
+    </div>
+
+    <div class="field">
+      <label for="lagerplatz">Lagerplatz</label>
+      <input id="lagerplatz" name="lagerplatz" type="text" value="{{ form_data.lagerplatz }}" placeholder="z. B. Regal 2 Fach 7">
+    </div>
+
+    <div class="field">
+      <label for="bestand">Bestand</label>
+      <input id="bestand" name="bestand" type="number" inputmode="numeric" min="0" step="1" required value="{{ form_data.bestand }}">
+    </div>
+
+    <div class="field">
+      <label for="mindestbestand">Mindestbestand</label>
+      <input id="mindestbestand" name="mindestbestand" type="number" inputmode="numeric" min="0" step="1" required value="{{ form_data.mindestbestand }}">
+    </div>
+
+    <div class="field">
+      <label for="bestelllink">Bestelllink</label>
+      <input id="bestelllink" name="bestelllink" type="url" value="{{ form_data.bestelllink }}" placeholder="https://…">
+    </div>
+
+    <div class="field is-full">
+      <label for="hinweis">Hinweis</label>
+      <textarea id="hinweis" name="hinweis" placeholder="z. B. Restbestand, Alternativartikel oder besondere Einbauhinweise.">{{ form_data.hinweis }}</textarea>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button class="btn btn-primary" type="submit">
+      {{ confirm_submit_label|default('Trotzdem speichern') if requires_duplicate_confirmation else submit_label }}
+    </button>
+    <a class="btn btn-secondary" href="{{ cancel_url }}">Abbrechen</a>
+  </div>
+</form>

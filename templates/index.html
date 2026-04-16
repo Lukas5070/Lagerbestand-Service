@@ -1,195 +1,182 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Lagerbestand</title>
-  <style>
-    :root{
-      --blue:#0d6efd; --green:#28a745; --amber:#ffc107; --red:#dc3545;
-      --bg:#f6f7fb; --card:#fff; --bd:#e5e7ef; --text:#222;
-    }
-    *{box-sizing:border-box}
-    html{scroll-behavior:smooth}
-    body{margin:0;padding:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+{% extends "base.html" %}
 
-    h1{margin:20px 16px 8px;font-size:28px;line-height:1.2}
-    .top-links{margin:0 16px 12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .top-links a{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:8px;background:var(--card);border:1px solid var(--bd);text-decoration:none;color:var(--blue);font-weight:600}
+{% block title %}Übersicht | {{ app_title }}{% endblock %}
 
-    .controls{margin:0 16px 14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .controls input[type="text"], .controls select{padding:10px 12px;border:1px solid #cfd3dc;border-radius:8px;background:#fff;min-width:220px}
+{% block content %}
+  <section class="page-header">
+    <div>
+      <h1 class="page-title">Lagerübersicht</h1>
+      <p class="page-intro">Alle Artikel bleiben zentral sichtbar. Die Suche filtert direkt in der Tabelle nach Name, Lagerplatz, Barcode-ID und Hinweis.</p>
+    </div>
+    <div class="page-actions">
+      <a class="btn btn-primary" href="{{ url_for('add') }}">Neuen Artikel anlegen</a>
+      <a class="btn btn-secondary" href="{{ url_for('barcodes') }}">Etiketten drucken</a>
+    </div>
+  </section>
 
-    .tablewrap{margin:0 16px 20px;background:var(--card);border:1px solid var(--bd);border-radius:10px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.05)}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:12px;border-bottom:1px solid #eef0f6;text-align:center;vertical-align:middle}
-    thead th{background:var(--blue);color:#fff;cursor:pointer;user-select:none}
-    thead th.nosort{cursor:default}
-    thead th.asc::after{content:" ▲"} thead th.desc::after{content:" ▼"}
+  <section class="metrics-grid">
+    <article class="metric-card">
+      <span class="metric-label">Artikel gesamt</span>
+      <strong class="metric-value">{{ summary.total }}</strong>
+      <p class="metric-note">Aktuell verwaltete Lagerpositionen.</p>
+    </article>
+    <article class="metric-card is-critical">
+      <span class="metric-label">Kritische Bestände</span>
+      <strong class="metric-value">{{ summary.critical }}</strong>
+      <p class="metric-note">Artikel unter dem Mindestbestand.</p>
+    </article>
+    <article class="metric-card is-warning">
+      <span class="metric-label">Knapp am Minimum</span>
+      <strong class="metric-value">{{ summary.low }}</strong>
+      <p class="metric-note">Artikel genau auf Mindestbestand.</p>
+    </article>
+    <article class="metric-card is-success">
+      <span class="metric-label">Dubletten-Gruppen</span>
+      <strong class="metric-value">{{ duplicate_group_count }}</strong>
+      <p class="metric-note">
+        {{ duplicate_article_count }} Artikel betroffen.
+        <a href="{{ url_for('duplicates') }}">Zur Dubletten-Ansicht</a>
+      </p>
+    </article>
+  </section>
 
-    .btn{display:inline-block;padding:6px 10px;border-radius:6px;color:#fff;text-decoration:none;margin:2px;font-size:.9em}
-    .btn-edit{background:#28a745}
-    .btn-delete{background:#dc3545}
-    .btn-order{background:#17a2b8}
-    .inline-form{display:inline}
+  <section class="panel stack-md">
+    <div class="panel-header">
+      <div>
+        <h2>Suchen und filtern</h2>
+        <p>Die Tabellenansicht bleibt vollständig erhalten, wird aber für den Alltag schneller filterbar.</p>
+      </div>
+    </div>
 
-    .status-green{color:#28a745;font-weight:700}
-    .status-yellow{color:#c58a00;font-weight:700}
-    .status-red{color:#dc3545;font-weight:700}
+    <div class="search-row">
+      <div class="field">
+        <label for="inventorySearch">Suche</label>
+        <input id="inventorySearch" type="text" placeholder="Name, Lagerplatz, Barcode-ID oder Hinweis">
+      </div>
+      <div class="field">
+        <label for="inventoryStatus">Status</label>
+        <select id="inventoryStatus">
+          <option value="alle">Alle</option>
+          <option value="kritisch">Nur kritisch</option>
+          <option value="knapp">Nur knapp</option>
+          <option value="ausreichend">Nur ausreichend</option>
+        </select>
+      </div>
+    </div>
+  </section>
 
-    .qrbox{display:flex;flex-direction:column;align-items:center;gap:4px}
-    .qrbox img{height:50px;width:auto;display:block}
-    .qrid{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#555;background:#f6f6f6;border:1px solid #e0e0e0;border-radius:4px;padding:2px 6px;white-space:nowrap}
+  <section class="table-panel">
+    <div class="table-topbar">
+      <div class="stack-sm">
+        <h2>Artikel</h2>
+        <div class="result-summary">
+          <span class="badge badge-neutral" id="inventoryCount">{{ artikel|length }} sichtbar</span>
+          <span class="badge">CSV-Export bleibt unverändert verfügbar</span>
+        </div>
+      </div>
+    </div>
 
-    .note{
-      text-align:left; max-width:420px; margin:0 auto; color:#1f2937;
-      line-height:1.35; word-break:break-word; white-space:normal;
-    }
-    .note .badge{display:inline-block;background:#fff3cd;border:1px solid #ffe69c;color:#7a5d00;border-radius:999px;padding:2px 8px;font-size:12px;margin-right:6px}
-    .muted{color:#6b7280}
-
-    tr:target{outline:3px solid var(--blue);background:#e8f1ff}
-
-    /* Mobile → Karten */
-    @media (max-width: 768px){
-      .top-links a{flex:1 1 100%}
-      .controls{flex-direction:column;align-items:stretch}
-      .controls input[type="text"], .controls select{width:100%;min-width:0}
-
-      table thead{display:none}
-      table, tbody, tr, td{display:block;width:100%}
-      tbody tr{border-bottom:0;margin:12px 12px;border:1px solid var(--bd);border-radius:10px;background:#fff;overflow:hidden}
-      td{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #f0f2f8}
-      td:last-child{border-bottom:none}
-      td::before{content:attr(data-label);font-weight:600;color:#667085;margin-right:12px;flex:0 0 auto}
-      td[data-label="Aktionen"]{flex-wrap:wrap;gap:8px}
-      .btn{padding:10px 12px;font-size:16px}
-      .qrbox img{height:42px}
-      .note{max-width:unset;text-align:right}
-    }
-  </style>
-
-  <script>
-    function searchTable() {
-      var q = (document.getElementById("searchInput").value || "").toLowerCase().trim();
-      var filterValue = document.getElementById("statusFilter").value;
-      var rows = document.querySelectorAll("tbody tr");
-      for (var i=0;i<rows.length;i++){
-        var r = rows[i];
-        var name = r.getAttribute("data-name") || "";
-        var lp   = r.getAttribute("data-lagerplatz") || "";
-        var id   = r.getAttribute("data-id") || "";
-        var status = r.getAttribute("data-status") || "";
-        var okQ = !q || name.indexOf(q)>-1 || lp.indexOf(q)>-1 || id.indexOf(q)>-1;
-        var okF = (filterValue==="alle") || (status===filterValue);
-        r.style.display = (okQ && okF) ? "" : "none";
-      }
-    }
-    function sortTable(colIndex){
-      var tbody = document.querySelector("tbody");
-      var rows = Array.prototype.slice.call(tbody.rows);
-      var headers = document.querySelectorAll("thead th");
-      var header = headers[colIndex];
-      if (!header || header.classList.contains("nosort")) return;
-      var isAsc = header.classList.contains("asc");
-      for (var h=0;h<headers.length;h++){ headers[h].classList.remove("asc","desc"); }
-      rows.sort(function(a,b){
-        var A = (a.cells[colIndex].innerText || "").trim().toLowerCase();
-        var B = (b.cells[colIndex].innerText || "").trim().toLowerCase();
-        var nA = parseFloat(A.replace(",", ".")); var nB = parseFloat(B.replace(",", "."));
-        if (!isNaN(nA) && !isNaN(nB)) return isAsc ? (nA-nB) : (nB-nA);
-        return isAsc ? A.localeCompare(B) : B.localeCompare(A);
-      });
-      for (var i=0;i<rows.length;i++){ tbody.appendChild(rows[i]); }
-      header.classList.toggle("asc", !isAsc);
-      header.classList.toggle("desc", isAsc);
-    }
-  </script>
-</head>
-<body>
-  <h1>📦 Lagerbestand</h1>
-
-  <div class="top-links">
-    <a href="/add">➕ Artikel hinzufügen</a>
-    <a href="/barcodes">🏷️ Barcodes drucken</a>
-    <a href="/scan">📷 Barcode scannen</a>
-    <a href="/export.csv?sep=semicolon&encoding=utf-8&bom=1">📤 CSV-Export</a>
-  </div>
-
-  <div class="controls">
-    🔎 <input type="text" id="searchInput" oninput="searchTable()" placeholder="Artikel, Lagerplatz oder Barcode-ID suchen…">
-    📊 <label for="statusFilter">Filter:</label>
-    <select id="statusFilter" onchange="searchTable()">
-      <option value="alle">Alle</option>
-      <option value="kritisch">Nur kritische</option>
-      <option value="knapp">Nur knappe</option>
-    </select>
-  </div>
-
-  <div class="tablewrap">
-    <table>
-      <thead>
-        <tr>
-          <th onclick="sortTable(0)">Name</th>
-          <th onclick="sortTable(1)">Bestand</th>
-          <th onclick="sortTable(2)">Mindestbestand</th>
-          <th class="nosort">Status</th>
-          <th onclick="sortTable(4)">Lagerplatz</th>
-          <th class="nosort">Hinweis</th>  <!-- 🆕 -->
-          <th class="nosort">Barcode</th>
-          <th class="nosort">Aktionen</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for art in artikel %}
-          {% set id_plain = art.barcode_filename[:-4] %}
-          {% set status_txt = 'kritisch' if art.bestand < art.mindestbestand else ('knapp' if art.bestand == art.mindestbestand else 'ausreichend') %}
-          <tr id="art-{{ art.id }}"
-              data-name="{{ (art.name or '')|lower }}"
-              data-lagerplatz="{{ (art.lagerplatz or '')|lower }}"
-              data-id="{{ id_plain|lower }}"
-              data-status="{{ status_txt }}">
-            <td data-label="Name">{{ art.name }}</td>
-            <td data-label="Bestand">{{ art.bestand }}</td>
-            <td data-label="Mindestbestand">{{ art.mindestbestand }}</td>
-            <td data-label="Status">
-              {% if art.bestand < art.mindestbestand %}
-                <span class="status-red">🔴 kritisch</span>
-              {% elif art.bestand == art.mindestbestand %}
-                <span class="status-yellow">🟡 knapp</span>
-              {% else %}
-                <span class="status-green">🟢 ausreichend</span>
-              {% endif %}
-            </td>
-            <td data-label="Lagerplatz">{{ art.lagerplatz or '-' }}</td>
-            <td data-label="Hinweis">
-              {% if art.hinweis %}
-                <div class="note" title="{{ art.hinweis }}">
-                  <span class="badge">⚠︎ Hinweis</span>{{ art.hinweis }}
-                </div>
-              {% else %}
-                <span class="muted">–</span>
-              {% endif %}
-            </td>
-            <td data-label="Barcode">
-              <div class="qrbox">
-                <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="QR">
-                <span class="qrid">{{ id_plain }}</span>
-              </div>
-            </td>
-            <td data-label="Aktionen">
-              <a href="{{ url_for('edit', id=art.id) }}" class="btn btn-edit">✏️ Bearbeiten</a>
-              <form action="{{ url_for('delete', id=art.id) }}" method="post" class="inline-form" onsubmit="return confirm('Wirklich löschen?');">
-                <button type="submit" class="btn btn-delete">🗑️ Löschen</button>
-              </form>
-              {% if art.bestelllink %}
-                <a href="{{ art.bestelllink }}" target="_blank" rel="noopener" class="btn btn-order">🔗 Bestellen</a>
-              {% endif %}
-            </td>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Artikel</th>
+            <th>Bestand</th>
+            <th>Status</th>
+            <th>Lagerplatz</th>
+            <th>Barcode</th>
+            <th>Erstellt</th>
+            <th>Aktionen</th>
           </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</body>
-</html>
+        </thead>
+        <tbody>
+          {% for art in artikel %}
+            <tr
+              id="art-{{ art.id }}"
+              class="inventory-row"
+              data-search="{{ ((art.name or '') ~ ' ' ~ (art.lagerplatz or '') ~ ' ' ~ art.barcode_id ~ ' ' ~ (art.hinweis or ''))|lower }}"
+              data-status="{{ art.status }}"
+            >
+              <td class="article-cell">
+                <p class="article-name">{{ art.name }}</p>
+                <div class="article-meta">
+                  <span class="inline-meta mono">ID {{ art.id }}</span>
+                  <span class="inline-meta mono">Barcode {{ art.barcode_id }}</span>
+                  {% if art.bestelllink %}
+                    <a class="inline-meta" href="{{ art.bestelllink }}" target="_blank" rel="noopener">Bestelllink</a>
+                  {% endif %}
+                </div>
+                {% if art.hinweis %}
+                  <div class="note-box">{{ art.hinweis }}</div>
+                {% endif %}
+              </td>
+              <td>
+                <strong>{{ art.bestand }}</strong>
+                <div class="muted-text">Minimum {{ art.mindestbestand }}</div>
+              </td>
+              <td>
+                {% if art.status == 'kritisch' %}
+                  <span class="status-badge is-critical">Kritisch</span>
+                {% elif art.status == 'knapp' %}
+                  <span class="status-badge is-warning">Knapp</span>
+                {% else %}
+                  <span class="status-badge is-success">Ausreichend</span>
+                {% endif %}
+              </td>
+              <td>{{ art.lagerplatz or '–' }}</td>
+              <td>
+                <div class="qr-preview">
+                  <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="QR-Code {{ art.name }}">
+                  <div class="stack-sm">
+                    <strong class="mono">{{ art.barcode_id }}</strong>
+                    <span class="muted-text">QR bereit</span>
+                  </div>
+                </div>
+              </td>
+              <td>{{ art.created_at|datetime_display }}</td>
+              <td>
+                <div class="table-actions">
+                  <a class="btn btn-secondary" href="{{ url_for('edit', id=art.id) }}">Bearbeiten</a>
+                  <a class="btn btn-ghost" href="{{ url_for('update', id=art.id) }}">Bestand ändern</a>
+                  <form action="{{ url_for('delete', id=art.id) }}" method="post" onsubmit="return confirm('Artikel wirklich löschen?');">
+                    <button class="btn btn-danger" type="submit">Löschen</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    const inventorySearch = document.getElementById("inventorySearch");
+    const inventoryStatus = document.getElementById("inventoryStatus");
+    const inventoryRows = Array.from(document.querySelectorAll(".inventory-row"));
+    const inventoryCount = document.getElementById("inventoryCount");
+
+    function filterInventoryRows() {
+      const query = (inventorySearch.value || "").trim().toLowerCase();
+      const status = inventoryStatus.value;
+      let visible = 0;
+
+      inventoryRows.forEach((row) => {
+        const matchesQuery = !query || row.dataset.search.includes(query);
+        const matchesStatus = status === "alle" || row.dataset.status === status;
+        const show = matchesQuery && matchesStatus;
+        row.style.display = show ? "" : "none";
+        if (show) {
+          visible += 1;
+        }
+      });
+
+      inventoryCount.textContent = `${visible} sichtbar`;
+    }
+
+    inventorySearch.addEventListener("input", filterInventoryRows);
+    inventoryStatus.addEventListener("change", filterInventoryRows);
+  </script>
+{% endblock %}

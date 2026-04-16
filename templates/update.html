@@ -1,18 +1,52 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <title>Bestand anpassen</title>
-</head>
-<body>
-  <h1>📦 Bestand anpassen</h1>
-  <h3>{{ artikel.name }} (aktuell: {{ artikel.bestand }})</h3>
-  <form method="post">
-    <label>Menge hinzufügen oder entnehmen (z. B. +1 oder -2):<br>
-      <input type="number" name="delta" required>
-    </label><br><br>
-    <button type="submit">💾 Speichern</button>
-    <a href="{{ url_for('index') }}">❌ Abbrechen</a>
-  </form>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Bestand ändern | {{ app_title }}{% endblock %}
+
+{% block content %}
+  <section class="page-header">
+    <div>
+      <h1 class="page-title">Bestand direkt anpassen</h1>
+      <p class="page-intro">Positive Werte erhöhen den Bestand, negative Werte reduzieren ihn.</p>
+    </div>
+  </section>
+
+  <section class="support-grid">
+    <article class="panel stack-md">
+      <div class="panel-header">
+        <div>
+          <h2>{{ artikel.name }}</h2>
+          <p>Aktueller Bestand {{ artikel.bestand }} · Mindestbestand {{ artikel.mindestbestand }}</p>
+        </div>
+      </div>
+
+      <form method="post" class="stack-md">
+        <div class="field">
+          <label for="delta">Mengenänderung</label>
+          <input id="delta" name="delta" type="number" required placeholder="z. B. 5 oder -2">
+          <p class="field-help">Beispiele: <span class="mono">5</span> für Zugang, <span class="mono">-2</span> für Entnahme.</p>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit">Bestand speichern</button>
+          <a class="btn btn-secondary" href="{{ url_for('index') }}#art-{{ artikel.id }}">Zurück</a>
+        </div>
+      </form>
+    </article>
+
+    <aside class="panel stack-md">
+      <div class="panel-header">
+        <div>
+          <h2>Status</h2>
+        </div>
+      </div>
+      {% if artikel.status == 'kritisch' %}
+        <span class="status-badge is-critical">Kritisch</span>
+      {% elif artikel.status == 'knapp' %}
+        <span class="status-badge is-warning">Knapp</span>
+      {% else %}
+        <span class="status-badge is-success">Ausreichend</span>
+      {% endif %}
+      <p class="muted-text">Die frühere Mail-Benachrichtigung wurde entfernt. Die Lagerlogik selbst bleibt unverändert.</p>
+    </aside>
+  </section>
+{% endblock %}

@@ -1,0 +1,53 @@
+services:
+  - type: web
+    name: lager-haesler-web
+    runtime: python
+    plan: starter
+    region: frankfurt
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+    envVars:
+      - key: COMPANY_NAME
+        value: R. Häsler AG
+      - key: APP_TITLE
+        value: Lagerverwaltung R. Häsler AG
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lager-haesler-db
+          property: connectionString
+
+  - type: web
+    name: lager-gerber-guentlisberger-web
+    runtime: python
+    plan: starter
+    region: frankfurt
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+    envVars:
+      - key: COMPANY_NAME
+        value: Gerber+Güntlisberger AG
+      - key: APP_TITLE
+        value: Lagerverwaltung Gerber+Güntlisberger AG
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lager-gerber-guentlisberger-db
+          property: connectionString
+
+databases:
+  - name: lager-haesler-db
+    plan: basic-256mb
+    region: frankfurt
+    diskSizeGB: 5
+
+  - name: lager-gerber-guentlisberger-db
+    plan: basic-256mb
+    region: frankfurt
+    diskSizeGB: 5

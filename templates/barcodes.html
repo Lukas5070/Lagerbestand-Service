@@ -1,304 +1,317 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Etiketten – QR Avery L4743REV</title>
-  <style>
-    :root{
-      --blue:#0d6efd; --green:#28a745; --grey:#6c757d; --bg:#f6f7fb; --bd:#e5e7ef;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Helvetica,sans-serif;background:var(--bg);color:#222}
+{% extends "base.html" %}
 
-    .toolbar{
-      position:sticky; top:0; z-index:5;
-      background:#fff; border-bottom:1px solid var(--bd);
-      padding:10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;
-    }
-    .toolbar a, .toolbar button{
-      appearance:none; border:1px solid var(--bd); background:#fff; color:#0d6efd;
-      padding:8px 12px; border-radius:8px; text-decoration:none; font-weight:600; cursor:pointer;
-    }
-    .toolbar input[type="date"], .toolbar input[type="text"], .toolbar input[type="number"]{
-      padding:8px 10px; border:1px solid #cfd3dc; border-radius:8px; background:#fff;
-    }
-    .muted{color:#666; font-size:12px}
+{% block title %}Barcodes drucken | {{ app_title }}{% endblock %}
 
-    .hint{padding:10px 12px}
+{% block content %}
+  <section class="page-header">
+    <div>
+      <h1 class="page-title">Barcode- und QR-Druck</h1>
+      <p class="page-intro">Die Drucklogik bleibt auf dem bestehenden Avery-L4743REV-Raster. Neu dazu kommen serverseitige Filter, klarere Auswahlaktionen und bessere Unterstützung für frisch angelegte Artikel.</p>
+    </div>
+  </section>
 
-    /* Druckbereich A4 Avery L4743REV (2x6) */
-    @page { size: A4; margin: 0; }
-    .seite{
-      height: 297mm; width: 210mm;
-      padding: 21.5mm 7mm;
-      box-sizing: border-box;
-      display: grid;
-      grid-template-columns: repeat(2, 99.1mm);
-      grid-template-rows: repeat(6, 42.3mm);
-      gap: 0mm 2.5mm;
-      page-break-after: always;
-      background:#fff;
-    }
-    .etikett{
-      box-sizing: border-box; padding: 3mm 2mm; text-align: center; overflow: hidden;
-      border: 1px dashed transparent; position: relative;
-    }
-    .etikett img{ height: 32mm; max-width: 100%; margin: 2mm 0 1mm; }
-    .etikett small{ display:block; color:#555 }
-    .etikett .cb{ position:absolute; left:4px; top:4px; }
+  <section class="metrics-grid">
+    <article class="metric-card">
+      <span class="metric-label">Aktiver Zeitraum</span>
+      <strong class="metric-value">{{ active_label }}</strong>
+      <p class="metric-note">Standardmäßig startet die Seite mit den zuletzt hinzugefügten Artikeln.</p>
+    </article>
+    <article class="metric-card">
+      <span class="metric-label">Treffer</span>
+      <strong class="metric-value">{{ artikel|length }}</strong>
+      <p class="metric-note">Aktuell serverseitig gefilterte Artikel.</p>
+    </article>
+    <article class="metric-card">
+      <span class="metric-label">Auswahl</span>
+      <strong class="metric-value" id="selectedCount">0</strong>
+      <p class="metric-note">Für „Nur Auswahl drucken“.</p>
+    </article>
+  </section>
 
-    /* Bereiche */
-    .druckbereich{ display:block; }
-    .druckbereich.ausblenden{ display:none; }
+  <form method="get" class="panel stack-md">
+    <div class="panel-header">
+      <div>
+        <h2>Suche und Schnellfilter</h2>
+        <p>Suche erfolgt robust serverseitig über Artikelname, Barcode-ID und Lagerplatz.</p>
+      </div>
+    </div>
 
-    /* Nicht drucken */
-    @media print{
-      .noprint, .etikett .cb { display:none!important; }
-      body{ background:#fff; }
-    }
+    <div class="chip-group">
+      {% for key, label in preset_options.items() %}
+        <label class="chip-option">
+          <input type="radio" name="preset" value="{{ key }}" {% if filters.preset == key %}checked{% endif %}>
+          <span>{{ label }}</span>
+        </label>
+      {% endfor %}
+    </div>
 
-    /* Liste oben "neuste" */
-    .neu-liste{ padding:8px 12px; }
-    .neu-item{ display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--bd);}
-    .neu-item img{ height:30px }
-    .neu-item small{ color:#555 }
-    .badge{ display:inline-block; padding:2px 6px; border:1px solid var(--bd); border-radius:999px; font-size:12px; color:#444; background:#fff; }
-    .grey{ opacity:.5 }
-  </style>
-</head>
-<body>
+    <div class="filter-grid form-grid-3">
+      <div class="field">
+        <label for="name">Artikelname</label>
+        <input id="name" name="name" type="text" value="{{ filters.name }}" placeholder="z. B. Dichtung">
+      </div>
+      <div class="field">
+        <label for="barcode">Barcode-ID</label>
+        <input id="barcode" name="barcode" type="text" value="{{ filters.barcode }}" placeholder="z. B. a1b2c3d4">
+      </div>
+      <div class="field">
+        <label for="location">Lagerplatz</label>
+        <input id="location" name="location" type="text" value="{{ filters.location }}" placeholder="z. B. Regal 3">
+      </div>
+      <div class="field">
+        <label for="date_from">Von</label>
+        <input id="date_from" name="date_from" type="date" value="{{ filters.date_from }}">
+      </div>
+      <div class="field">
+        <label for="date_to">Bis</label>
+        <input id="date_to" name="date_to" type="date" value="{{ filters.date_to }}">
+      </div>
+      <div class="field">
+        <label for="copies">Kopien pro Etikett</label>
+        <input id="copies" type="number" min="1" step="1" value="1">
+      </div>
+    </div>
 
-  <!-- Toolbar -->
-  <div class="toolbar noprint">
-    <a href="/">⬅ Zurück</a>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Filter anwenden</button>
+      <button class="btn btn-secondary" type="button" id="sinceLastPrint">Seit letztem Druck</button>
+      <a class="btn btn-ghost" href="{{ url_for('barcodes') }}">Filter zurücksetzen</a>
+      <span class="muted-text" id="lastPrintInfo"></span>
+    </div>
+  </form>
 
-    <!-- Modus -->
-    <button type="button" onclick="zeigeNurNeue()">🆕 Nur neue</button>
-    <button type="button" onclick="zeigeAlle()">📦 Alle</button>
+  <section class="panel stack-md">
+    <div class="selection-toolbar">
+      <div class="selection-actions">
+        <button class="btn btn-secondary" type="button" id="selectVisible">Sichtbare auswählen</button>
+        <button class="btn btn-ghost" type="button" id="clearSelection">Auswahl aufheben</button>
+      </div>
+      <div class="selection-actions">
+        <button class="btn btn-warning" type="button" id="printSelected">Nur Auswahl drucken</button>
+        <button class="btn btn-success" type="button" id="printVisible">Alle sichtbaren drucken</button>
+      </div>
+    </div>
+    <p class="muted-text">Gedruckt wird weiterhin nur das bestehende Etikettenlayout mit Artikelname, QR-Code und Barcode-ID.</p>
+  </section>
 
-    <!-- Suche -->
-    <input id="search" type="text" placeholder="Suchen (Name)…" value="{{ suchbegriff or '' }}" oninput="filterSuche()">
-
-    <!-- Datumsfilter -->
-    <span class="muted">Von</span>
-    <input id="from" type="date" value="{{ date_from or '' }}">
-    <span class="muted">Bis</span>
-    <input id="to" type="date" value="{{ date_to or '' }}">
-    <button type="button" onclick="anwenden()">Anwenden</button>
-    <button type="button" onclick="seitLetztemDruck()">Seit letztem Druck</button>
-    <span id="lastInfo" class="muted"></span>
-
-    <!-- Auswahl -->
-    <button type="button" onclick="sichtbareAuswaehlen()">✔ Sichtbare auswählen</button>
-    <button type="button" onclick="auswahlAufheben()">✖ Auswahl aufheben</button>
-
-    <!-- Kopien -->
-    <span class="muted">Kopien/Etikett</span>
-    <input id="copies" type="number" min="1" step="1" value="1" style="width:70px">
-
-    <!-- Drucken -->
-    <button type="button" onclick="druckeNurAuswahl()">🟡 Nur Auswahl drucken</button>
-    <button type="button" onclick="druckeAlles()">🟢 Jetzt drucken</button>
-  </div>
-
-  <div class="hint noprint">
-    <span class="badge">Tipp</span> Wähle einen Zeitraum (Von/Bis) und drucke nur diese neuen Etiketten. Nach dem Druck merkt sich die Seite das Datum („Seit letztem Druck“).
-  </div>
-
-  <!-- Kurzübersicht der neuen (nicht druckbar) -->
-  <div class="neu-liste noprint" id="liste-neu">
-    <h3>🆕 Zuletzt hinzugefügt (nach Datumfilter)</h3>
-    {% if neue_artikel %}
-      {% for art in neue_artikel %}
-        <div class="neu-item" data-name="{{ (art.name or '')|lower }}">
-          <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="QR">
-          <div>
-            <div><strong>{{ art.name }}</strong></div>
-            <small>ID: {{ art.barcode_filename[:-4] }} ·
-              Hinzugefügt: {{ art.created_at.strftime('%d.%m.%Y %H:%M') if art.created_at else '–' }}
-            </small>
+  {% if artikel %}
+    <section class="table-panel">
+      <div class="table-topbar">
+        <div class="stack-sm">
+          <h2>Trefferliste</h2>
+          <div class="result-summary">
+            <span class="badge badge-neutral">{{ artikel|length }} Artikel</span>
+            <span class="badge">Sortierung: {% if filters.preset == 'all' %}Name aufsteigend{% else %}neueste zuerst{% endif %}</span>
           </div>
         </div>
-      {% endfor %}
-    {% else %}
-      <p class="muted">Keine Artikel im gewählten Zeitraum.</p>
-    {% endif %}
-  </div>
-
-  <!-- Druckbereiche -->
-  <div id="nur-neue" class="druckbereich">
-    {% for i in range(0, neue_artikel|length, 12) %}
-      <div class="seite">
-        {% for art in neue_artikel[i:i+12] %}
-          <div class="etikett"
-               data-id="{{ art.barcode_filename[:-4] }}"
-               data-name="{{ (art.name or '')|lower }}"
-               data-created="{{ art.created_at.isoformat() if art.created_at else '' }}">
-            <label class="cb noprint"><input type="checkbox" class="sel"> auswählen</label>
-            <strong>{{ art.name }}</strong><br>
-            <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="QR"><br>
-            <small>{{ art.barcode_filename[:-4] }}</small>
-          </div>
-        {% endfor %}
       </div>
-    {% endfor %}
-  </div>
 
-  <div id="alle-artikel" class="druckbereich ausblenden">
-    {% for i in range(0, artikel|length, 12) %}
-      <div class="seite">
-        {% for art in artikel[i:i+12] %}
-          <div class="etikett"
-               data-id="{{ art.barcode_filename[:-4] }}"
-               data-name="{{ (art.name or '')|lower }}"
-               data-created="{{ art.created_at.isoformat() if art.created_at else '' }}">
-            <label class="cb noprint"><input type="checkbox" class="sel"> auswählen</label>
-            <strong>{{ art.name }}</strong><br>
-            <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="QR"><br>
-            <small>{{ art.barcode_filename[:-4] }}</small>
-          </div>
-        {% endfor %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="checkbox-cell">Auswahl</th>
+              <th>Artikel</th>
+              <th>Barcode-ID</th>
+              <th>Lagerplatz</th>
+              <th>Bestand</th>
+              <th>Erstellt</th>
+              <th>QR</th>
+              <th>Bearbeiten</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for art in artikel %}
+              <tr
+                class="barcode-row"
+                data-name="{{ art.name }}"
+                data-barcode="{{ art.barcode_id }}"
+                data-image="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}"
+                data-created="{{ art.created_at.isoformat() if art.created_at else '' }}"
+              >
+                <td class="checkbox-cell">
+                  <input class="checkbox-input print-select" type="checkbox" aria-label="Artikel {{ art.name }} auswählen">
+                </td>
+                <td class="article-cell">
+                  <p class="article-name">{{ art.name }}</p>
+                  {% if art.hinweis %}
+                    <div class="note-box">{{ art.hinweis }}</div>
+                  {% endif %}
+                </td>
+                <td class="mono">{{ art.barcode_id }}</td>
+                <td>{{ art.lagerplatz or '–' }}</td>
+                <td>{{ art.bestand }}</td>
+                <td>{{ art.created_at|datetime_display }}</td>
+                <td>
+                  <div class="qr-preview">
+                    <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="QR-Code {{ art.name }}">
+                  </div>
+                </td>
+                <td>
+                  <a class="btn btn-ghost" href="{{ url_for('edit', id=art.id) }}">Bearbeiten</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
-    {% endfor %}
-  </div>
+    </section>
+  {% else %}
+    <section class="empty-state">
+      <h3>Keine Artikel für diesen Filter gefunden</h3>
+      <p class="muted-text">Passe Zeitraum oder Suchfelder an, oder wechsle auf „Alle Artikel“.</p>
+    </section>
+  {% endif %}
+{% endblock %}
 
-  <!-- Unsichtbarer Container zum Druck der Auswahl/Kopien -->
-  <div id="print-only" style="display:none"></div>
-
+{% block scripts %}
   <script>
-    // --- Sicht umschalten ---
-    function zeigeNurNeue(){ document.getElementById('nur-neue').classList.remove('ausblenden'); document.getElementById('alle-artikel').classList.add('ausblenden'); }
-    function zeigeAlle(){ document.getElementById('alle-artikel').classList.remove('ausblenden'); document.getElementById('nur-neue').classList.add('ausblenden'); }
+    const printRoot = document.getElementById("global-print-root");
+    const selectedCount = document.getElementById("selectedCount");
+    const rowNodes = Array.from(document.querySelectorAll(".barcode-row"));
+    const checkboxNodes = Array.from(document.querySelectorAll(".print-select"));
+    const lastPrintInfo = document.getElementById("lastPrintInfo");
 
-    // --- Suche (nur in Ansicht wirksam, nicht serverseitig) ---
-    function filterSuche(){
-      const q = (document.getElementById('search').value || '').toLowerCase();
-      ['nur-neue','alle-artikel'].forEach(id=>{
-        const root = document.getElementById(id);
-        const etiketten = root.querySelectorAll('.etikett');
-        etiketten.forEach(el=>{
-          const name = el.getAttribute('data-name') || '';
-          el.style.display = (!q || name.indexOf(q) >= 0) ? '' : 'none';
-        });
+    function updateSelectedCount() {
+      const count = checkboxNodes.filter((checkbox) => checkbox.checked).length;
+      selectedCount.textContent = count;
+    }
+
+    function selectVisibleRows() {
+      checkboxNodes.forEach((checkbox) => {
+        checkbox.checked = true;
       });
-      // Liste oben ebenfalls filtern
-      document.querySelectorAll('#liste-neu .neu-item').forEach(li=>{
-        const name = li.getAttribute('data-name') || '';
-        li.style.display = (!q || name.indexOf(q) >= 0) ? '' : 'none';
+      updateSelectedCount();
+    }
+
+    function clearSelection() {
+      checkboxNodes.forEach((checkbox) => {
+        checkbox.checked = false;
       });
+      updateSelectedCount();
     }
 
-    // --- Datumsfilter anwenden (lädt Seite neu mit Parametern) ---
-    function anwenden(){
-      const f = document.getElementById('from').value;
-      const t = document.getElementById('to').value;
-      const q = document.getElementById('search').value;
-      const params = new URLSearchParams();
-      if (f) params.set('from', f);
-      if (t) params.set('to', t);
-      if (q) params.set('q', q);
-      location.href = '/barcodes' + (params.toString() ? '?' + params.toString() : '');
-    }
+    function buildPrintableItems(onlySelected) {
+      const copies = Math.max(1, parseInt(document.getElementById("copies").value || "1", 10));
+      const selectedRows = rowNodes.filter((row) => {
+        const checkbox = row.querySelector(".print-select");
+        return !onlySelected || checkbox.checked;
+      });
 
-    // --- "Seit letztem Druck" (per localStorage) ---
-    function seitLetztemDruck(){
-      const last = localStorage.getItem('lastPrintDate'); // ISO yyyy-mm-dd
-      const today = new Date();
-      const fmt = d => d.toISOString().slice(0,10);
-      document.getElementById('from').value = last || fmt(new Date(today.getFullYear(), today.getMonth(), today.getDate()-7));
-      document.getElementById('to').value   = fmt(today);
-    }
-    (function initLastInfo(){
-      const last = localStorage.getItem('lastPrintDate');
-      if (last){
-        document.getElementById('lastInfo').textContent = `Letzter Druck: ${last}`;
+      if (!selectedRows.length) {
+        return [];
       }
-    })();
 
-    // --- Auswahl-Helper ---
-    function _currentRoot(){
-      return document.getElementById('nur-neue').classList.contains('ausblenden')
-        ? document.getElementById('alle-artikel')
-        : document.getElementById('nur-neue');
-    }
-    function sichtbareAuswaehlen(){
-      _currentRoot().querySelectorAll('.etikett').forEach(el=>{
-        if (el.style.display !== 'none'){
-          const cb = el.querySelector('.sel'); if (cb) cb.checked = true;
+      const items = [];
+      selectedRows.forEach((row) => {
+        for (let index = 0; index < copies; index += 1) {
+          items.push({
+            name: row.dataset.name,
+            barcode: row.dataset.barcode,
+            image: row.dataset.image,
+            created: row.dataset.created
+          });
         }
       });
+
+      return items;
     }
-    function auswahlAufheben(){
-      document.querySelectorAll('.sel').forEach(cb=> cb.checked = false);
-    }
 
-    // --- Drucken ---
-    function _collectToPrint(onlySelected){
-      const root = _currentRoot();
-      const copies = Math.max(1, parseInt(document.getElementById('copies').value || '1', 10));
-      const nodes = root.querySelectorAll('.etikett');
-      const out = document.getElementById('print-only');
-      out.innerHTML = '';
+    function renderPrintSheets(items) {
+      printRoot.innerHTML = "";
+      if (!items.length) {
+        return null;
+      }
 
-      // neue Seite im Avery-Layout aufbauen
-      let page = null, countOnPage = 0;
+      let latestCreated = null;
 
-      let maxCreated = null;
-      nodes.forEach(el=>{
-        const selected = el.querySelector('.sel')?.checked;
-        if (onlySelected && !selected) return;
-        if (el.style.display === 'none') return;
+      for (let index = 0; index < items.length; index += 12) {
+        const sheet = document.createElement("div");
+        sheet.className = "label-sheet";
 
-        const created = el.getAttribute('data-created');
-        if (created){
-          const d = new Date(created);
-          if (!isNaN(d)) maxCreated = (!maxCreated || d > maxCreated) ? d : maxCreated;
-        }
+        items.slice(index, index + 12).forEach((item) => {
+          const label = document.createElement("div");
+          label.className = "label-item";
+          const title = document.createElement("strong");
+          title.textContent = item.name;
 
-        for (let i=0;i<copies;i++){
-          if (!page || countOnPage >= 12){
-            page = document.createElement('div');
-            page.className = 'seite';
-            out.appendChild(page);
-            countOnPage = 0;
+          const image = document.createElement("img");
+          image.src = item.image;
+          image.alt = "";
+
+          const code = document.createElement("small");
+          code.textContent = item.barcode;
+
+          label.appendChild(title);
+          label.appendChild(image);
+          label.appendChild(code);
+          sheet.appendChild(label);
+
+          if (item.created) {
+            const createdAt = new Date(item.created);
+            if (!Number.isNaN(createdAt.valueOf()) && (!latestCreated || createdAt > latestCreated)) {
+              latestCreated = createdAt;
+            }
           }
-          const clone = el.cloneNode(true);
-          clone.querySelectorAll('.cb').forEach(c=>c.remove()); // Checkboxen nicht drucken
-          page.appendChild(clone);
-          countOnPage++;
-        }
-      });
+        });
 
-      return maxCreated;
-    }
-
-    function druckeNurAuswahl(){
-      const maxCreated = _collectToPrint(true);
-      window.print();
-      if (maxCreated){
-        // yyyy-mm-dd speichern
-        const iso = maxCreated.toISOString().slice(0,10);
-        localStorage.setItem('lastPrintDate', iso);
-        document.getElementById('lastInfo').textContent = `Letzter Druck: ${iso}`;
+        printRoot.appendChild(sheet);
       }
-      document.getElementById('print-only').innerHTML = '';
+
+      return latestCreated;
     }
 
-    function druckeAlles(){
-      const maxCreated = _collectToPrint(false);
-      window.print();
-      if (maxCreated){
-        const iso = maxCreated.toISOString().slice(0,10);
-        localStorage.setItem('lastPrintDate', iso);
-        document.getElementById('lastInfo').textContent = `Letzter Druck: ${iso}`;
+    function updateLastPrint(date) {
+      const value = (date || new Date()).toISOString().slice(0, 10);
+      localStorage.setItem("lastPrintDate", value);
+      lastPrintInfo.textContent = `Letzter Druck: ${value}`;
+    }
+
+    function runPrint(onlySelected) {
+      const items = buildPrintableItems(onlySelected);
+      if (!items.length) {
+        window.alert(onlySelected ? "Bitte mindestens einen Artikel auswählen." : "Keine sichtbaren Artikel zum Drucken vorhanden.");
+        return;
       }
-      document.getElementById('print-only').innerHTML = '';
+
+      const latestCreated = renderPrintSheets(items);
+      window.print();
+      updateLastPrint(latestCreated);
     }
 
-    // initiale Suche anwenden, falls Query gesetzt
-    filterSuche();
+    function clearPrintSheets() {
+      printRoot.innerHTML = "";
+    }
+
+    checkboxNodes.forEach((checkbox) => {
+      checkbox.addEventListener("change", updateSelectedCount);
+    });
+
+    document.getElementById("selectVisible").addEventListener("click", selectVisibleRows);
+    document.getElementById("clearSelection").addEventListener("click", clearSelection);
+    document.getElementById("printSelected").addEventListener("click", () => runPrint(true));
+    document.getElementById("printVisible").addEventListener("click", () => runPrint(false));
+    window.addEventListener("afterprint", clearPrintSheets);
+
+    const initialLastPrintDate = localStorage.getItem("lastPrintDate");
+    if (initialLastPrintDate) {
+      lastPrintInfo.textContent = `Letzter Druck: ${initialLastPrintDate}`;
+    }
+
+    document.getElementById("sinceLastPrint").addEventListener("click", () => {
+      const fromField = document.getElementById("date_from");
+      const toField = document.getElementById("date_to");
+      const presetField = document.querySelector('input[name="preset"][value="custom"]');
+      const storedLastPrintDate = localStorage.getItem("lastPrintDate");
+      const today = new Date().toISOString().slice(0, 10);
+      fromField.value = storedLastPrintDate || today;
+      toField.value = today;
+      if (presetField) {
+        presetField.checked = true;
+      }
+      document.querySelector('form[method="get"]').submit();
+    });
+
+    updateSelectedCount();
   </script>
-
-</body>
-</html>
+{% endblock %}

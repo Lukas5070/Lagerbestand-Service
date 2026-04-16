@@ -1,34 +1,41 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <title>Artikel hinzufügen</title>
-</head>
-<body>
-  <h1>➕ Neuer Artikel</h1>
-  <form method="post">
-    <label>Name:<br>
-      <input type="text" name="name" required>
-    </label><br><br>
+{% extends "base.html" %}
 
-    <label>Bestand:<br>
-      <input type="number" name="bestand" required>
-    </label><br><br>
+{% block title %}Artikel hinzufügen | {{ app_title }}{% endblock %}
 
-    <label>Mindestbestand:<br>
-      <input type="number" name="mindestbestand" required>
-    </label><br><br>
+{% block content %}
+  <section class="page-header">
+    <div>
+      <h1 class="page-title">Neuen Artikel anlegen</h1>
+      <p class="page-intro">Die Stammdaten bleiben bewusst kompakt. Barcode und QR-Code werden beim Speichern automatisch erzeugt.</p>
+    </div>
+  </section>
 
-    <label>Lagerplatz:<br>
-      <input type="text" name="lagerplatz" value="">
-    </label><br><br>
+  <section class="support-grid">
+    <article class="panel stack-md">
+      <div class="panel-header">
+        <div>
+          <h2>Artikel erfassen</h2>
+          <p>Bei Namens-Dubletten erscheint eine sichtbare Warnung, das Speichern bleibt aber weiterhin möglich.</p>
+        </div>
+      </div>
+      {% set submit_label = 'Artikel speichern' %}
+      {% set confirm_submit_label = 'Trotzdem speichern' %}
+      {% set cancel_url = url_for('index') %}
+      {% include "_article_form.html" %}
+    </article>
 
-    <label>Bestelllink:<br>
-      <input type="url" name="bestelllink" placeholder="https://...">
-    </label><br><br>
-
-    <button type="submit">💾 Speichern</button>
-    <a href="{{ url_for('index') }}">❌ Abbrechen</a>
-  </form>
-</body>
-</html>
+    <aside class="panel stack-md">
+      <div class="panel-header">
+        <div>
+          <h2>Hinweise</h2>
+        </div>
+      </div>
+      <div class="stack-sm">
+        <span class="badge badge-neutral">Konfigurierbar per Environment Variables</span>
+        <span class="badge">Gleiches Layout für alle Firmen</span>
+        <span class="badge">Keine automatische Dubletten-Bereinigung</span>
+      </div>
+      <p class="muted-text">Für eine zweite Firma braucht es später nur ein separates Render-Deployment mit eigener Datenbank und eigenen Umgebungswerten.</p>
+    </aside>
+  </section>
+{% endblock %}

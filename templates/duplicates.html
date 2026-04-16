@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Dubletten | {{ app_title }}{% endblock %}
+
+{% block content %}
+  <section class="page-header">
+    <div>
+      <h1 class="page-title">Dubletten prüfen</h1>
+      <p class="page-intro">Gruppiert werden nur exakte Namens-Dubletten auf Basis eines normalisierten Artikelnamens: Kleinschreibung, beschnittene Ränder und zusammengefasste Leerzeichen.</p>
+    </div>
+  </section>
+
+  <section class="metrics-grid">
+    <article class="metric-card">
+      <span class="metric-label">Dublettengruppen</span>
+      <strong class="metric-value">{{ duplicate_group_count }}</strong>
+      <p class="metric-note">Nur Gruppen mit mindestens zwei Treffern.</p>
+    </article>
+    <article class="metric-card">
+      <span class="metric-label">Betroffene Artikel</span>
+      <strong class="metric-value">{{ duplicate_article_count }}</strong>
+      <p class="metric-note">Keine automatische Zusammenführung.</p>
+    </article>
+  </section>
+
+  {% if duplicate_groups %}
+    <section class="stack-lg">
+      {% for group in duplicate_groups %}
+        <article class="table-panel">
+          <div class="table-topbar">
+            <div class="stack-sm">
+              <h2>{{ group.display_name }}</h2>
+              <div class="result-summary">
+                <span class="badge badge-neutral">{{ group.count }} Treffer</span>
+                <span class="badge mono">normalisiert: {{ group.normalized_name }}</span>
+              </div>
+              {% if group.variant_names|length > 1 %}
+                <div class="muted-text">Namensvarianten: {{ group.variant_names|join(", ") }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Artikelname</th>
+                  <th>Artikel-ID</th>
+                  <th>Barcode-ID</th>
+                  <th>Lagerplatz</th>
+                  <th>Bestand</th>
+                  <th>Erstellt</th>
+                  <th>Bearbeiten</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for art in group["items"] %}
+                  <tr>
+                    <td>{{ art.name }}</td>
+                    <td class="mono">#{{ art.id }}</td>
+                    <td class="mono">{{ art.barcode_id }}</td>
+                    <td>{{ art.lagerplatz or '–' }}</td>
+                    <td>{{ art.bestand }}</td>
+                    <td>{{ art.created_at|datetime_display }}</td>
+                    <td><a class="btn btn-ghost" href="{{ url_for('edit', id=art.id) }}">Bearbeiten</a></td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+  {% else %}
+    <section class="empty-state">
+      <h3>Keine Dubletten gefunden</h3>
+      <p class="muted-text">Aktuell gibt es keine mehrfach erfassten Artikel auf Basis des normalisierten Namens.</p>
+    </section>
+  {% endif %}
+{% endblock %}
