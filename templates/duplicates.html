@@ -4,22 +4,17 @@
 
 {% block content %}
   <section class="page-header">
-    <div>
-      <h1 class="page-title">Dubletten prüfen</h1>
-      <p class="page-intro">Gruppiert werden nur exakte Namens-Dubletten auf Basis eines normalisierten Artikelnamens: Kleinschreibung, beschnittene Ränder und zusammengefasste Leerzeichen.</p>
-    </div>
+    <h1 class="page-title">Dubletten</h1>
   </section>
 
   <section class="metrics-grid">
     <article class="metric-card">
       <span class="metric-label">Dublettengruppen</span>
       <strong class="metric-value">{{ duplicate_group_count }}</strong>
-      <p class="metric-note">Nur Gruppen mit mindestens zwei Treffern.</p>
     </article>
     <article class="metric-card">
       <span class="metric-label">Betroffene Artikel</span>
       <strong class="metric-value">{{ duplicate_article_count }}</strong>
-      <p class="metric-note">Keine automatische Zusammenführung.</p>
     </article>
   </section>
 
@@ -33,10 +28,10 @@
               <div class="result-summary">
                 <span class="badge badge-neutral">{{ group.count }} Treffer</span>
                 <span class="badge mono">normalisiert: {{ group.normalized_name }}</span>
+                {% if group.variant_names|length > 1 %}
+                  <span class="badge">{{ group.variant_names|join(" · ") }}</span>
+                {% endif %}
               </div>
-              {% if group.variant_names|length > 1 %}
-                <div class="muted-text">Namensvarianten: {{ group.variant_names|join(", ") }}</div>
-              {% endif %}
             </div>
           </div>
 
@@ -74,7 +69,6 @@
   {% else %}
     <section class="empty-state">
       <h3>Keine Dubletten gefunden</h3>
-      <p class="muted-text">Aktuell gibt es keine mehrfach erfassten Artikel auf Basis des normalisierten Namens.</p>
     </section>
   {% endif %}
 {% endblock %}

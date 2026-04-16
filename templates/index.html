@@ -4,10 +4,7 @@
 
 {% block content %}
   <section class="page-header">
-    <div>
-      <h1 class="page-title">Lagerübersicht</h1>
-      <p class="page-intro">Alle Artikel bleiben zentral sichtbar. Die Suche filtert direkt in der Tabelle nach Name, Lagerplatz, Barcode-ID und Hinweis.</p>
-    </div>
+    <h1 class="page-title">Lagerübersicht</h1>
     <div class="page-actions">
       <a class="btn btn-primary" href="{{ url_for('add') }}">Neuen Artikel anlegen</a>
       <a class="btn btn-secondary" href="{{ url_for('barcodes') }}">Etiketten drucken</a>
@@ -18,35 +15,23 @@
     <article class="metric-card">
       <span class="metric-label">Artikel gesamt</span>
       <strong class="metric-value">{{ summary.total }}</strong>
-      <p class="metric-note">Aktuell verwaltete Lagerpositionen.</p>
     </article>
     <article class="metric-card is-critical">
       <span class="metric-label">Kritische Bestände</span>
       <strong class="metric-value">{{ summary.critical }}</strong>
-      <p class="metric-note">Artikel unter dem Mindestbestand.</p>
     </article>
     <article class="metric-card is-warning">
       <span class="metric-label">Knapp am Minimum</span>
       <strong class="metric-value">{{ summary.low }}</strong>
-      <p class="metric-note">Artikel genau auf Mindestbestand.</p>
     </article>
     <article class="metric-card is-success">
       <span class="metric-label">Dubletten-Gruppen</span>
       <strong class="metric-value">{{ duplicate_group_count }}</strong>
-      <p class="metric-note">
-        {{ duplicate_article_count }} Artikel betroffen.
-        <a href="{{ url_for('duplicates') }}">Zur Dubletten-Ansicht</a>
-      </p>
     </article>
   </section>
 
   <section class="panel stack-md">
-    <div class="panel-header">
-      <div>
-        <h2>Suchen und filtern</h2>
-        <p>Die Tabellenansicht bleibt vollständig erhalten, wird aber für den Alltag schneller filterbar.</p>
-      </div>
-    </div>
+    <h2>Suchen und filtern</h2>
 
     <div class="search-row">
       <div class="field">
@@ -71,7 +56,6 @@
         <h2>Artikel</h2>
         <div class="result-summary">
           <span class="badge badge-neutral" id="inventoryCount">{{ artikel|length }} sichtbar</span>
-          <span class="badge">CSV-Export bleibt unverändert verfügbar</span>
         </div>
       </div>
     </div>
@@ -127,10 +111,7 @@
               <td>
                 <div class="qr-preview">
                   <img src="{{ url_for('static', filename='barcodes/' + art.barcode_filename) }}" alt="QR-Code {{ art.name }}">
-                  <div class="stack-sm">
-                    <strong class="mono">{{ art.barcode_id }}</strong>
-                    <span class="muted-text">QR bereit</span>
-                  </div>
+                  <strong class="mono">{{ art.barcode_id }}</strong>
                 </div>
               </td>
               <td>{{ art.created_at|datetime_display }}</td>

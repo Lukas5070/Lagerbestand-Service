@@ -17,13 +17,11 @@
         {% endfor %}
       </div>
 
-      <p class="field-help">
-        {% if requires_duplicate_confirmation %}
-          Prüfe die Liste kurz und klicke dann erneut auf „{{ confirm_submit_label|default('Trotzdem speichern') }}“, wenn die Dublette fachlich korrekt ist.
-        {% else %}
-          Die Warnung dient nur zur Prüfung. Eine automatische Zusammenführung findet nicht statt.
-        {% endif %}
-      </p>
+      {% if requires_duplicate_confirmation %}
+        <p class="field-help">
+          Erneut auf „{{ confirm_submit_label|default('Trotzdem speichern') }}“ klicken, wenn die Dublette korrekt ist.
+        </p>
+      {% endif %}
     </div>
   {% endif %}
 
@@ -35,7 +33,6 @@
     <div class="field">
       <label for="name">Artikelname</label>
       <input id="name" name="name" type="text" required value="{{ form_data.name }}" autocomplete="off" spellcheck="false">
-      <p class="field-help">Dubletten werden auf Basis von Kleinschreibung und bereinigten Leerzeichen erkannt.</p>
     </div>
 
     <div class="field">

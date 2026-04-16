@@ -4,10 +4,7 @@
 
 {% block content %}
   <section class="page-header">
-    <div>
-      <h1 class="page-title">Artikel bearbeiten</h1>
-      <p class="page-intro">Die Übersicht springt nach dem Speichern wieder direkt zu diesem Artikel zurück.</p>
-    </div>
+    <h1 class="page-title">Artikel bearbeiten</h1>
     <div class="page-actions">
       <a class="btn btn-secondary" href="{{ url_for('update', id=artikel.id) }}">Bestand ändern</a>
       <a class="btn btn-ghost" href="{{ url_for('adjust_barcode', barcode_id=artikel.barcode_id) }}">Barcode-Modus</a>
@@ -16,12 +13,6 @@
 
   <section class="content-grid">
     <article class="panel stack-md">
-      <div class="panel-header">
-        <div>
-          <h2>Stammdaten</h2>
-          <p>Änderungen am Namen werden ebenfalls gegen vorhandene Dubletten geprüft.</p>
-        </div>
-      </div>
       {% set submit_label = 'Änderungen speichern' %}
       {% set confirm_submit_label = 'Trotzdem speichern' %}
       {% set cancel_url = url_for('index') + '#art-' + artikel.id|string %}
@@ -65,8 +56,6 @@
           <dd>{{ artikel.created_at|datetime_display }}</dd>
         </div>
       </dl>
-
-      <p class="muted-text">Die Barcode-/QR-Datei bleibt erhalten. Nur Stammdaten und Bestände werden geändert.</p>
     </aside>
   </section>
 {% endblock %}

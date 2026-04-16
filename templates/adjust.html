@@ -4,49 +4,11 @@
 
 {% block content %}
   <section class="page-header">
-    <div>
-      <h1 class="page-title">Bestand über Barcode anpassen</h1>
-      <p class="page-intro">Nach dem Scannen landest du direkt auf dieser Seite und kannst die Menge sofort buchen.</p>
-    </div>
+    <h1 class="page-title">Bestand über Barcode anpassen</h1>
   </section>
 
-  <section class="support-grid">
-    <article class="panel stack-md">
-      <div class="panel-header">
-        <div>
-          <h2>{{ artikel.name }}</h2>
-          <p>Aktueller Bestand {{ artikel.bestand }} · Barcode {{ artikel.barcode_id }}</p>
-        </div>
-      </div>
-
-      <form method="post" class="stack-md">
-        <div class="field">
-          <label for="menge">Menge</label>
-          <input id="menge" name="menge" type="number" inputmode="numeric" min="1" step="1" required placeholder="z. B. 1">
-        </div>
-
-        <div class="field">
-          <span class="field-label">Aktion</span>
-          <div class="chip-group">
-            <label class="chip-option">
-              <input type="radio" name="aktion" value="hinzufügen" checked>
-              <span>Hinzufügen</span>
-            </label>
-            <label class="chip-option">
-              <input type="radio" name="aktion" value="entnehmen">
-              <span>Entnehmen</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button class="btn btn-primary" type="submit">Buchung speichern</button>
-          <a class="btn btn-secondary" href="{{ url_for('index') }}#art-{{ artikel.id }}">Zurück</a>
-        </div>
-      </form>
-    </article>
-
-    <aside class="panel stack-md">
+  <section class="panel stack-md">
+    <div class="panel-header">
       <div class="code-card">
         <img src="{{ url_for('static', filename='barcodes/' + artikel.barcode_filename) }}" alt="QR-Code {{ artikel.name }}">
         <div class="stack-sm">
@@ -54,7 +16,33 @@
           <span class="badge mono">{{ artikel.barcode_id }}</span>
         </div>
       </div>
-      <p class="muted-text">Das Barcode-Scanning bleibt erhalten, nur die Oberfläche wurde aufgeräumt und vereinheitlicht.</p>
-    </aside>
+      <span class="badge">Bestand {{ artikel.bestand }}</span>
+    </div>
+
+    <form method="post" class="stack-md">
+      <div class="field">
+        <label for="menge">Menge</label>
+        <input id="menge" name="menge" type="number" inputmode="numeric" min="1" step="1" required placeholder="z. B. 1">
+      </div>
+
+      <div class="field">
+        <span class="field-label">Aktion</span>
+        <div class="chip-group">
+          <label class="chip-option">
+            <input type="radio" name="aktion" value="hinzufügen" checked>
+            <span>Hinzufügen</span>
+          </label>
+          <label class="chip-option">
+            <input type="radio" name="aktion" value="entnehmen">
+            <span>Entnehmen</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Buchung speichern</button>
+        <a class="btn btn-secondary" href="{{ url_for('index') }}#art-{{ artikel.id }}">Zurück</a>
+      </div>
+    </form>
   </section>
 {% endblock %}

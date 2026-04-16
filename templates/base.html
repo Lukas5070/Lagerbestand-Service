@@ -13,7 +13,6 @@
       <div class="brand-block">
         <p class="brand-kicker">{{ company_name }}</p>
         <a class="brand-title" href="{{ url_for('index') }}">{{ app_title }}</a>
-        <p class="brand-subtitle">Bestand, Scan und Etikettendruck in einer gemeinsamen Oberfläche.</p>
       </div>
 
       <nav class="site-nav">
@@ -44,10 +43,6 @@
 
       {% block content %}{% endblock %}
     </main>
-
-    <footer class="site-footer">
-      {{ company_name }} · dieselbe Codebasis kann mit getrennten Datenbanken und Render-Deployments betrieben werden.
-    </footer>
   </div>
 
   <div id="global-print-root"></div>

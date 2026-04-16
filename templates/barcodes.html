@@ -4,37 +4,26 @@
 
 {% block content %}
   <section class="page-header">
-    <div>
-      <h1 class="page-title">Barcode- und QR-Druck</h1>
-      <p class="page-intro">Die Drucklogik bleibt auf dem bestehenden Avery-L4743REV-Raster. Neu dazu kommen serverseitige Filter, klarere Auswahlaktionen und bessere Unterstützung für frisch angelegte Artikel.</p>
-    </div>
+    <h1 class="page-title">Barcodes drucken</h1>
   </section>
 
   <section class="metrics-grid">
     <article class="metric-card">
       <span class="metric-label">Aktiver Zeitraum</span>
       <strong class="metric-value">{{ active_label }}</strong>
-      <p class="metric-note">Standardmäßig startet die Seite mit den zuletzt hinzugefügten Artikeln.</p>
     </article>
     <article class="metric-card">
       <span class="metric-label">Treffer</span>
       <strong class="metric-value">{{ artikel|length }}</strong>
-      <p class="metric-note">Aktuell serverseitig gefilterte Artikel.</p>
     </article>
     <article class="metric-card">
       <span class="metric-label">Auswahl</span>
       <strong class="metric-value" id="selectedCount">0</strong>
-      <p class="metric-note">Für „Nur Auswahl drucken“.</p>
     </article>
   </section>
 
   <form method="get" class="panel stack-md">
-    <div class="panel-header">
-      <div>
-        <h2>Suche und Schnellfilter</h2>
-        <p>Suche erfolgt robust serverseitig über Artikelname, Barcode-ID und Lagerplatz.</p>
-      </div>
-    </div>
+    <h2>Filter</h2>
 
     <div class="chip-group">
       {% for key, label in preset_options.items() %}
@@ -91,7 +80,6 @@
         <button class="btn btn-success" type="button" id="printVisible">Alle sichtbaren drucken</button>
       </div>
     </div>
-    <p class="muted-text">Gedruckt wird weiterhin nur das bestehende Etikettenlayout mit Artikelname, QR-Code und Barcode-ID.</p>
   </section>
 
   {% if artikel %}
@@ -101,7 +89,6 @@
           <h2>Trefferliste</h2>
           <div class="result-summary">
             <span class="badge badge-neutral">{{ artikel|length }} Artikel</span>
-            <span class="badge">Sortierung: {% if filters.preset == 'all' %}Name aufsteigend{% else %}neueste zuerst{% endif %}</span>
           </div>
         </div>
       </div>
@@ -159,7 +146,6 @@
   {% else %}
     <section class="empty-state">
       <h3>Keine Artikel für diesen Filter gefunden</h3>
-      <p class="muted-text">Passe Zeitraum oder Suchfelder an, oder wechsle auf „Alle Artikel“.</p>
     </section>
   {% endif %}
 {% endblock %}

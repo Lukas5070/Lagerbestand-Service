@@ -4,39 +4,14 @@
 
 {% block content %}
   <section class="page-header">
-    <div>
-      <h1 class="page-title">Barcode scannen</h1>
-      <p class="page-intro">Die Kamera öffnet direkt im Browser. Nach erfolgreichem Scan springt die App automatisch in die Bestandsbuchung.</p>
-    </div>
+    <h1 class="page-title">Barcode scannen</h1>
   </section>
 
-  <section class="content-grid">
-    <article class="panel stack-md">
-      <div class="panel-header">
-        <div>
-          <h2>Kamera</h2>
-          <p>Für mobile Geräte ist die Rückkamera als Standard hinterlegt.</p>
-        </div>
-      </div>
-      <div class="scanner-reader">
-        <div id="reader"></div>
-      </div>
-      <div id="scanResult" class="scan-result">Kamera wird vorbereitet…</div>
-    </article>
-
-    <aside class="panel stack-md">
-      <div class="panel-header">
-        <div>
-          <h2>Ablauf</h2>
-        </div>
-      </div>
-      <div class="stack-sm">
-        <span class="badge badge-neutral">1. Kamera freigeben</span>
-        <span class="badge badge-neutral">2. QR-Code erfassen</span>
-        <span class="badge badge-neutral">3. Bestand buchen</span>
-      </div>
-      <p class="muted-text">Falls ein Code nicht gefunden wird, bleibt die Oberfläche offen und zeigt den Fehler direkt an.</p>
-    </aside>
+  <section class="panel stack-md">
+    <div class="scanner-reader">
+      <div id="reader"></div>
+    </div>
+    <div id="scanResult" class="scan-result">Kamera wird vorbereitet…</div>
   </section>
 {% endblock %}
 
