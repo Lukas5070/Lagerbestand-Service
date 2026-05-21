@@ -8,6 +8,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from io import StringIO
 from pathlib import Path
+from urllib.parse import parse_qs, unquote, urlparse
 
 import qrcode
 from flask import (
@@ -16,6 +17,7 @@ from flask import (
     abort,
     current_app,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -78,6 +80,29 @@ def barcode_id_from_filename(filename: str | None) -> str:
     if not filename:
         return ""
     return filename[:-4] if filename.endswith(".png") else filename
+
+
+def normalize_scanned_barcode_id(raw_code: str | None) -> str:
+    value = re.sub(r"\s+", "", raw_code or "")
+    value = value.strip("\"'<>")
+    if not value:
+        return ""
+
+    parsed = urlparse(value)
+    path = unquote(parsed.path or "")
+    segments = [segment for segment in path.split("/") if segment]
+    if segments:
+        value = segments[-1]
+    elif parsed.query:
+        query_values = parse_qs(parsed.query)
+        for key in ("barcode", "barcode_id", "code", "id"):
+            if query_values.get(key):
+                value = query_values[key][0]
+                break
+
+    value = unquote(value).strip("\"'<>")
+    value = re.sub(r"\.png", "", value, flags=re.IGNORECASE)
+    return value.lower()
 
 
 def ensure_column(table: str, column: str, ddl_pg: str, ddl_sqlite: str) -> None:
@@ -321,7 +346,7 @@ def create_app() -> Flask:
         return value.strftime("%d.%m.%Y %H:%M")
 
     @app.context_processor
-    def inject_layout_context() -> dict[str, str]:
+    def inject_layout_context() -> dict[str, object]:
         return {
             "app_title": app.config["APP_TITLE"],
             "company_name": app.config["COMPANY_NAME"],
@@ -481,6 +506,49 @@ def create_app() -> Flask:
         if not app.config["SCANNER_ENABLED"]:
             abort(404)
         return render_template("scan.html")
+
+    @app.route("/scanner")
+    def scanner():
+        if not app.config["SCANNER_ENABLED"]:
+            abort(404)
+        return render_template("scanner.html")
+
+    @app.route("/scanner/lookup", methods=["POST"])
+    def scanner_lookup():
+        if not app.config["SCANNER_ENABLED"]:
+            return jsonify({"error": "Scanner ist deaktiviert."}), 404
+
+        payload = request.get_json(silent=True) or request.form
+        raw_code = payload.get("code") if payload else ""
+        barcode_id = normalize_scanned_barcode_id(raw_code)
+
+        artikel = None
+        if barcode_id:
+            artikel = Artikel.query.filter(Artikel.barcode_filename == f"{barcode_id}.png").first()
+
+        if not artikel:
+            return jsonify(
+                {
+                    "found": False,
+                    "message": "Artikel nicht gefunden",
+                    "barcode_id": barcode_id,
+                }
+            )
+
+        return jsonify(
+            {
+                "found": True,
+                "article": {
+                    "id": artikel.id,
+                    "name": artikel.name,
+                    "bestand": artikel.bestand,
+                    "mindestbestand": artikel.mindestbestand,
+                    "lagerplatz": artikel.lagerplatz or "",
+                    "barcode_id": artikel.barcode_id,
+                    "status": artikel.status,
+                },
+            }
+        )
 
     @app.route("/healthz")
     def healthz():

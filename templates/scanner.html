@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scannerstation | {{ app_title }}</title>
+  <style>
+    :root {
+      --scanner-bg: #05070d;
+      --scanner-panel: #111827;
+      --scanner-panel-soft: #172033;
+      --scanner-text: #f8fafc;
+      --scanner-muted: #a9b4c6;
+      --scanner-line: #2a3548;
+      --scanner-primary: #38bdf8;
+      --scanner-success: #22c55e;
+      --scanner-warning: #f59e0b;
+      --scanner-danger: #ef4444;
+      --scanner-radius: 24px;
+      --scanner-font: "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      background: var(--scanner-bg);
+      color: var(--scanner-text);
+      font-family: var(--scanner-font);
+      line-height: 1.35;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .scanner-shell {
+      width: min(100%, 760px);
+      min-height: 100dvh;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 18px;
+    }
+
+    .scanner-topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      color: var(--scanner-muted);
+      font-size: 1rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .scanner-topbar a {
+      min-height: 54px;
+      padding: 14px 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--scanner-line);
+      border-radius: 18px;
+      color: var(--scanner-text);
+      text-decoration: none;
+      text-transform: none;
+      letter-spacing: 0;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .scanner-ready {
+      padding: clamp(24px, 6vw, 46px);
+      border: 1px solid var(--scanner-line);
+      border-radius: var(--scanner-radius);
+      background:
+        linear-gradient(180deg, rgba(56, 189, 248, 0.16), rgba(17, 24, 39, 0.96)),
+        var(--scanner-panel);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+    }
+
+    .scanner-ready h1 {
+      margin: 0;
+      font-size: clamp(3rem, 11vw, 5.8rem);
+      line-height: 0.95;
+      letter-spacing: 0;
+    }
+
+    .scanner-form {
+      margin-top: 24px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .scanner-form label {
+      color: var(--scanner-muted);
+      font-size: 1rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .scanner-input {
+      width: 100%;
+      min-height: 74px;
+      padding: 18px 20px;
+      border: 2px solid var(--scanner-primary);
+      border-radius: 20px;
+      background: #020617;
+      color: var(--scanner-text);
+      font-size: clamp(1.25rem, 4vw, 1.8rem);
+      font-weight: 800;
+      outline: none;
+      box-shadow: 0 0 0 5px rgba(56, 189, 248, 0.14);
+    }
+
+    .scanner-input::placeholder {
+      color: #64748b;
+    }
+
+    .scanner-message {
+      min-height: 64px;
+      padding: 18px 20px;
+      border-radius: 20px;
+      border: 1px solid var(--scanner-line);
+      display: flex;
+      align-items: center;
+      color: var(--scanner-text);
+      font-size: 1.25rem;
+      font-weight: 800;
+      background: var(--scanner-panel-soft);
+    }
+
+    .scanner-message[hidden] {
+      display: none;
+    }
+
+    .scanner-message.is-success {
+      border-color: rgba(34, 197, 94, 0.55);
+      background: rgba(34, 197, 94, 0.12);
+    }
+
+    .scanner-message.is-error {
+      border-color: rgba(239, 68, 68, 0.6);
+      background: rgba(239, 68, 68, 0.14);
+    }
+
+    .scanner-result {
+      min-height: 300px;
+      padding: clamp(22px, 5vw, 34px);
+      border: 1px solid var(--scanner-line);
+      border-radius: var(--scanner-radius);
+      background: var(--scanner-panel);
+      display: grid;
+      align-content: start;
+      gap: 22px;
+    }
+
+    .scanner-empty {
+      min-height: 220px;
+      display: grid;
+      place-items: center;
+      color: var(--scanner-muted);
+      font-size: clamp(1.4rem, 5vw, 2rem);
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .scanner-empty[hidden],
+    .article-card[hidden] {
+      display: none;
+    }
+
+    .article-card {
+      display: grid;
+      gap: 22px;
+    }
+
+    .article-name {
+      margin: 0;
+      font-size: clamp(2rem, 7vw, 3.6rem);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    .article-stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .article-stat {
+      min-height: 112px;
+      padding: 18px;
+      border: 1px solid var(--scanner-line);
+      border-radius: 20px;
+      background: #0b1120;
+      display: grid;
+      align-content: center;
+      gap: 6px;
+    }
+
+    .article-stat span {
+      color: var(--scanner-muted);
+      font-size: 0.92rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .article-stat strong {
+      font-size: clamp(1.6rem, 6vw, 2.8rem);
+      line-height: 1;
+    }
+
+    .article-stat.is-full {
+      grid-column: 1 / -1;
+    }
+
+    .status-pill {
+      width: fit-content;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 1rem;
+      background: rgba(56, 189, 248, 0.14);
+      color: #bae6fd;
+    }
+
+    .status-pill.is-critical {
+      background: rgba(239, 68, 68, 0.18);
+      color: #fecaca;
+    }
+
+    .status-pill.is-warning {
+      background: rgba(245, 158, 11, 0.18);
+      color: #fed7aa;
+    }
+
+    .status-pill.is-success {
+      background: rgba(34, 197, 94, 0.18);
+      color: #bbf7d0;
+    }
+
+    .scanner-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .scanner-actions button {
+      min-height: 72px;
+      border: 1px solid var(--scanner-line);
+      border-radius: 20px;
+      background: #111827;
+      color: var(--scanner-muted);
+      font-size: clamp(1rem, 4vw, 1.25rem);
+      font-weight: 900;
+    }
+
+    .scanner-actions button:disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 560px) {
+      .scanner-shell {
+        padding: 16px;
+      }
+
+      .scanner-topbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .scanner-topbar a,
+      .scanner-actions button {
+        width: 100%;
+      }
+
+      .article-stats,
+      .scanner-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="scanner-shell">
+    <header class="scanner-topbar">
+      <span>{{ company_name }}</span>
+      <a href="{{ url_for('index') }}">Übersicht</a>
+    </header>
+
+    <section class="scanner-ready" aria-labelledby="scannerTitle">
+      <h1 id="scannerTitle">Bereit zum Scan</h1>
+      <form id="scannerForm" class="scanner-form" autocomplete="off">
+        <label for="scannerInput">Scan-Code</label>
+        <input
+          id="scannerInput"
+          class="scanner-input"
+          name="code"
+          type="text"
+          autofocus
+          spellcheck="false"
+          autocapitalize="off"
+          autocomplete="off"
+          placeholder="Barcode-ID"
+        >
+      </form>
+    </section>
+
+    <section id="scannerMessage" class="scanner-message" role="status" aria-live="polite" hidden></section>
+
+    <section class="scanner-result" aria-live="polite">
+      <div id="scannerEmpty" class="scanner-empty">Letzter Artikel erscheint hier</div>
+
+      <article id="articleCard" class="article-card" hidden>
+        <div>
+          <div id="articleStatus" class="status-pill"></div>
+          <h2 id="articleName" class="article-name"></h2>
+        </div>
+
+        <div class="article-stats">
+          <div class="article-stat">
+            <span>Bestand</span>
+            <strong id="articleStock"></strong>
+          </div>
+          <div id="minimumStat" class="article-stat">
+            <span>Mindestbestand</span>
+            <strong id="articleMinimum"></strong>
+          </div>
+          <div id="locationStat" class="article-stat is-full">
+            <span>Lagerplatz</span>
+            <strong id="articleLocation"></strong>
+          </div>
+          <div class="article-stat is-full">
+            <span>Barcode-ID</span>
+            <strong id="articleBarcode"></strong>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="scanner-actions" aria-label="Buchungsaktionen">
+      <button type="button" disabled>Abbruch</button>
+      <button type="button" disabled>Entnehmen</button>
+      <button type="button" disabled>Hinzufügen</button>
+      <button type="button" disabled>Korrektur</button>
+      <button type="button" disabled>Bestätigen</button>
+    </section>
+  </main>
+
+  <script>
+    const scannerForm = document.getElementById("scannerForm");
+    const scannerInput = document.getElementById("scannerInput");
+    const scannerMessage = document.getElementById("scannerMessage");
+    const scannerEmpty = document.getElementById("scannerEmpty");
+    const articleCard = document.getElementById("articleCard");
+    const articleName = document.getElementById("articleName");
+    const articleStock = document.getElementById("articleStock");
+    const articleMinimum = document.getElementById("articleMinimum");
+    const articleLocation = document.getElementById("articleLocation");
+    const articleBarcode = document.getElementById("articleBarcode");
+    const articleStatus = document.getElementById("articleStatus");
+    const minimumStat = document.getElementById("minimumStat");
+    const locationStat = document.getElementById("locationStat");
+
+    function focusScannerInput() {
+      scannerInput.focus({ preventScroll: true });
+    }
+
+    function showMessage(message, kind) {
+      scannerMessage.textContent = message;
+      scannerMessage.className = `scanner-message is-${kind}`;
+      scannerMessage.hidden = false;
+    }
+
+    function clearMessage() {
+      scannerMessage.hidden = true;
+      scannerMessage.textContent = "";
+      scannerMessage.className = "scanner-message";
+    }
+
+    function clearArticle() {
+      articleCard.hidden = true;
+      scannerEmpty.hidden = false;
+    }
+
+    function statusLabel(status) {
+      if (status === "kritisch") {
+        return "Kritisch";
+      }
+      if (status === "knapp") {
+        return "Knapp";
+      }
+      return "Ausreichend";
+    }
+
+    function statusClass(status) {
+      if (status === "kritisch") {
+        return "status-pill is-critical";
+      }
+      if (status === "knapp") {
+        return "status-pill is-warning";
+      }
+      return "status-pill is-success";
+    }
+
+    function showArticle(article) {
+      articleName.textContent = article.name || "";
+      articleStock.textContent = article.bestand;
+      articleBarcode.textContent = article.barcode_id || "";
+      articleStatus.textContent = statusLabel(article.status);
+      articleStatus.className = statusClass(article.status);
+
+      const hasMinimum = article.mindestbestand !== null && article.mindestbestand !== undefined;
+      minimumStat.hidden = !hasMinimum;
+      articleMinimum.textContent = hasMinimum ? article.mindestbestand : "";
+
+      const hasLocation = Boolean(article.lagerplatz);
+      locationStat.hidden = !hasLocation;
+      articleLocation.textContent = hasLocation ? article.lagerplatz : "";
+
+      scannerEmpty.hidden = true;
+      articleCard.hidden = false;
+      showMessage("Artikel gefunden", "success");
+    }
+
+    async function lookupCode(rawCode) {
+      const response = await fetch("{{ url_for('scanner_lookup') }}", {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ code: rawCode })
+      });
+      return response.json();
+    }
+
+    scannerForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const rawCode = scannerInput.value;
+      scannerInput.value = "";
+
+      if (!rawCode.trim()) {
+        clearMessage();
+        focusScannerInput();
+        return;
+      }
+
+      showMessage("Scan wird geprüft", "success");
+
+      try {
+        const result = await lookupCode(rawCode);
+        if (result.found) {
+          showArticle(result.article);
+        } else {
+          clearArticle();
+          showMessage("Artikel nicht gefunden", "error");
+        }
+      } catch (error) {
+        clearArticle();
+        showMessage("Artikel nicht gefunden", "error");
+      } finally {
+        focusScannerInput();
+      }
+    });
+
+    document.addEventListener("pointerdown", () => {
+      window.setTimeout(focusScannerInput, 0);
+    });
+    window.addEventListener("load", focusScannerInput);
+    window.addEventListener("focus", focusScannerInput);
+  </script>
+</body>
+</html>
