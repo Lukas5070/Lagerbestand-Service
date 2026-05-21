@@ -13,6 +13,7 @@ import qrcode
 from flask import (
     Flask,
     Response,
+    abort,
     current_app,
     flash,
     redirect,
@@ -324,6 +325,7 @@ def create_app() -> Flask:
         return {
             "app_title": app.config["APP_TITLE"],
             "company_name": app.config["COMPANY_NAME"],
+            "SCANNER_ENABLED": app.config["SCANNER_ENABLED"],
         }
 
     @app.route("/")
@@ -476,6 +478,8 @@ def create_app() -> Flask:
 
     @app.route("/scan")
     def scan():
+        if not app.config["SCANNER_ENABLED"]:
+            abort(404)
         return render_template("scan.html")
 
     @app.route("/healthz")

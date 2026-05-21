@@ -13,6 +13,8 @@ services:
         value: R. Häsler AG
       - key: APP_TITLE
         value: Lagerverwaltung R. Häsler AG
+      - key: SCANNER_ENABLED
+        value: "true"
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
@@ -34,6 +36,8 @@ services:
         value: Gerber+Güntlisberger AG
       - key: APP_TITLE
         value: Lagerverwaltung Gerber+Güntlisberger AG
+      - key: SCANNER_ENABLED
+        value: "false"
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL

@@ -20,7 +20,9 @@
         <a class="nav-link{% if request.endpoint == 'add' %} active{% endif %}" href="{{ url_for('add') }}">Artikel hinzufügen</a>
         <a class="nav-link{% if request.endpoint == 'duplicates' %} active{% endif %}" href="{{ url_for('duplicates') }}">Dubletten</a>
         <a class="nav-link{% if request.endpoint == 'barcodes' %} active{% endif %}" href="{{ url_for('barcodes') }}">Barcodes drucken</a>
-        <a class="nav-link{% if request.endpoint == 'scan' %} active{% endif %}" href="{{ url_for('scan') }}">Scannen</a>
+        {% if SCANNER_ENABLED %}
+          <a class="nav-link{% if request.endpoint == 'scan' %} active{% endif %}" href="{{ url_for('scan') }}">Scannen</a>
+        {% endif %}
         <a class="nav-link" href="{{ url_for('export_csv', sep='semicolon', encoding='utf-8', bom=1) }}">CSV-Export</a>
       </nav>
     </header>

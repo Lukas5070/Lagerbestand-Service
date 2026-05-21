@@ -18,6 +18,7 @@ class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "local-dev-secret-key")
     COMPANY_NAME = os.getenv("COMPANY_NAME", "Musterfirma")
     APP_TITLE = os.getenv("APP_TITLE", "Lagerverwaltung")
+    SCANNER_ENABLED = os.getenv("SCANNER_ENABLED", "").strip().lower() in {"true", "1", "yes", "on"}
     SQLALCHEMY_DATABASE_URI = normalize_database_url(os.getenv("DATABASE_URL"))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     UPLOAD_FOLDER = str(BARCODE_DIR)
