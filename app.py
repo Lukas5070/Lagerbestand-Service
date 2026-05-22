@@ -503,8 +503,6 @@ def create_app() -> Flask:
 
     @app.route("/scan")
     def scan():
-        if not app.config["SCANNER_ENABLED"]:
-            abort(404)
         return render_template("scan.html")
 
     @app.route("/scanner")
