@@ -331,7 +331,7 @@
 
     .amount-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(180px, 0.55fr);
+      grid-template-columns: 76px minmax(0, 1fr) 76px minmax(180px, 0.55fr);
       gap: 12px;
     }
 
@@ -346,6 +346,8 @@
       font-size: clamp(1.35rem, 5vw, 2rem);
       font-weight: 900;
       outline: none;
+      text-align: center;
+      caret-color: transparent;
       box-shadow: 0 0 0 5px rgba(56, 189, 248, 0.12);
     }
 
@@ -357,6 +359,14 @@
       background: var(--scanner-primary) !important;
       color: #02111f !important;
       border-color: transparent !important;
+    }
+
+    .amount-step-button {
+      border-color: rgba(56, 189, 248, 0.42) !important;
+      color: var(--scanner-text) !important;
+      background: rgba(56, 189, 248, 0.12) !important;
+      font-size: clamp(2rem, 8vw, 3rem) !important;
+      line-height: 1 !important;
     }
 
     .scanner-message.is-info {
@@ -383,6 +393,14 @@
       .scanner-actions,
       .amount-row {
         grid-template-columns: 1fr;
+      }
+
+      .amount-row {
+        grid-template-columns: 82px minmax(0, 1fr) 82px;
+      }
+
+      .amount-confirm-button {
+        grid-column: 1 / -1;
       }
     }
   </style>
@@ -452,16 +470,20 @@
           <form id="amountForm" class="amount-form" autocomplete="off" hidden>
             <label id="amountLabel" for="amountInput">Menge</label>
             <div class="amount-row">
+              <button id="decreaseAmountButton" class="amount-step-button" type="button" aria-label="Menge reduzieren">-</button>
               <input
                 id="amountInput"
                 class="amount-input"
                 name="amount"
-                type="number"
-                inputmode="numeric"
+                type="text"
+                inputmode="none"
                 step="1"
                 min="1"
+                readonly
+                tabindex="-1"
                 placeholder="Menge"
               >
+              <button id="increaseAmountButton" class="amount-step-button" type="button" aria-label="Menge erhöhen">+</button>
               <button id="confirmActionButton" class="amount-confirm-button" type="submit">Bestätigen</button>
             </div>
           </form>
@@ -490,7 +512,10 @@
     const amountForm = document.getElementById("amountForm");
     const amountInput = document.getElementById("amountInput");
     const amountLabel = document.getElementById("amountLabel");
+    const decreaseAmountButton = document.getElementById("decreaseAmountButton");
+    const increaseAmountButton = document.getElementById("increaseAmountButton");
     const confirmActionButton = document.getElementById("confirmActionButton");
+    const amountStepButtons = [decreaseAmountButton, increaseAmountButton];
 
     const actionLabels = {
       add: "Hinzufügen",
@@ -532,6 +557,9 @@
       amountInput.value = "";
       amountInput.disabled = false;
       confirmActionButton.disabled = false;
+      amountStepButtons.forEach((button) => {
+        button.disabled = false;
+      });
       actionButtons.forEach((button) => {
         button.classList.remove("is-selected");
         button.disabled = false;
@@ -629,6 +657,28 @@
       return result;
     }
 
+    function minimumAmount() {
+      return selectedAction === "correct" ? 0 : 1;
+    }
+
+    function currentAmount() {
+      const amount = Number.parseInt(amountInput.value, 10);
+      return Number.isNaN(amount) ? minimumAmount() : amount;
+    }
+
+    function setAmountValue(amount) {
+      amountInput.value = Math.max(minimumAmount(), amount);
+      decreaseAmountButton.disabled = isSaving || currentAmount() <= minimumAmount();
+      increaseAmountButton.disabled = isSaving;
+    }
+
+    function changeAmount(delta) {
+      if (!currentArticle || !selectedAction || isSaving) {
+        return;
+      }
+      setAmountValue(currentAmount() + delta);
+    }
+
     function selectAction(action) {
       if (!currentArticle || isSaving) {
         return;
@@ -643,16 +693,16 @@
         amountLabel.textContent = "Neuer Bestand";
         amountInput.min = "0";
         amountInput.placeholder = "Neuer Bestand";
+        setAmountValue(Number.parseInt(currentArticle.bestand, 10) || 0);
       } else {
         amountLabel.textContent = "Menge";
         amountInput.min = "1";
         amountInput.placeholder = "Menge";
+        setAmountValue(1);
       }
 
-      amountInput.value = "";
       amountForm.hidden = false;
       showMessage(`${actionLabels[action]} gewählt`, "info");
-      window.setTimeout(() => amountInput.focus({ preventScroll: true }), 0);
     }
 
     function setSavingState(isDisabled) {
@@ -662,7 +712,13 @@
       });
       cancelActionButton.disabled = isDisabled;
       amountInput.disabled = isDisabled;
+      amountStepButtons.forEach((button) => {
+        button.disabled = isDisabled;
+      });
       confirmActionButton.disabled = isDisabled;
+      if (!isDisabled) {
+        setAmountValue(currentAmount());
+      }
     }
 
     scannerForm.addEventListener("submit", async (event) => {
@@ -698,6 +754,9 @@
       button.addEventListener("click", () => selectAction(button.dataset.scannerAction));
     });
 
+    decreaseAmountButton.addEventListener("click", () => changeAmount(-1));
+    increaseAmountButton.addEventListener("click", () => changeAmount(1));
+
     cancelActionButton.addEventListener("click", () => {
       resetForNextScan("Abgebrochen. Bereit für nächsten Scan.", "info");
     });
@@ -717,7 +776,6 @@
       } catch (error) {
         setSavingState(false);
         showMessage(error.message, "error");
-        window.setTimeout(() => amountInput.focus({ preventScroll: true }), 0);
       }
     });
 
