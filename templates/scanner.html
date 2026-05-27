@@ -48,7 +48,7 @@
       margin: 0 auto;
       padding: 24px;
       display: grid;
-      grid-template-rows: auto auto 1fr auto;
+      grid-template-rows: auto auto auto 1fr;
       gap: 18px;
     }
 
@@ -177,7 +177,8 @@
     }
 
     .scanner-empty[hidden],
-    .article-card[hidden] {
+    .article-card[hidden],
+    .amount-form[hidden] {
       display: none;
     }
 
@@ -252,13 +253,19 @@
       color: #bbf7d0;
     }
 
+    .scanner-workflow {
+      display: grid;
+      gap: 16px;
+    }
+
     .scanner-actions {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 12px;
     }
 
-    .scanner-actions button {
+    .scanner-actions button,
+    .amount-form button {
       min-height: 72px;
       border: 1px solid var(--scanner-line);
       border-radius: 20px;
@@ -266,11 +273,95 @@
       color: var(--scanner-muted);
       font-size: clamp(1rem, 4vw, 1.25rem);
       font-weight: 900;
+      cursor: pointer;
     }
 
-    .scanner-actions button:disabled {
+    .scanner-actions button:disabled,
+    .amount-form button:disabled,
+    .amount-input:disabled {
       opacity: 0.48;
       cursor: not-allowed;
+    }
+
+    .scanner-action-button.is-add {
+      border-color: rgba(34, 197, 94, 0.5);
+      color: #bbf7d0;
+      background: rgba(34, 197, 94, 0.14);
+    }
+
+    .scanner-action-button.is-remove {
+      border-color: rgba(245, 158, 11, 0.5);
+      color: #fed7aa;
+      background: rgba(245, 158, 11, 0.13);
+    }
+
+    .scanner-action-button.is-correct {
+      border-color: rgba(56, 189, 248, 0.5);
+      color: #bae6fd;
+      background: rgba(56, 189, 248, 0.13);
+    }
+
+    .scanner-cancel-button {
+      border-color: rgba(239, 68, 68, 0.5) !important;
+      color: #fecaca !important;
+      background: rgba(239, 68, 68, 0.12) !important;
+    }
+
+    .scanner-action-button.is-selected {
+      outline: 4px solid rgba(248, 250, 252, 0.22);
+      color: var(--scanner-text);
+    }
+
+    .amount-form {
+      display: grid;
+      gap: 10px;
+      padding: 16px;
+      border: 1px solid var(--scanner-line);
+      border-radius: 20px;
+      background: #0b1120;
+    }
+
+    .amount-form label {
+      color: var(--scanner-muted);
+      font-size: 0.92rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .amount-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(180px, 0.55fr);
+      gap: 12px;
+    }
+
+    .amount-input {
+      width: 100%;
+      min-height: 72px;
+      padding: 16px 18px;
+      border: 2px solid var(--scanner-primary);
+      border-radius: 20px;
+      background: #020617;
+      color: var(--scanner-text);
+      font-size: clamp(1.35rem, 5vw, 2rem);
+      font-weight: 900;
+      outline: none;
+      box-shadow: 0 0 0 5px rgba(56, 189, 248, 0.12);
+    }
+
+    .amount-input::placeholder {
+      color: #64748b;
+    }
+
+    .amount-confirm-button {
+      background: var(--scanner-primary) !important;
+      color: #02111f !important;
+      border-color: transparent !important;
+    }
+
+    .scanner-message.is-info {
+      border-color: rgba(56, 189, 248, 0.48);
+      background: rgba(56, 189, 248, 0.12);
     }
 
     @media (max-width: 560px) {
@@ -289,7 +380,8 @@
       }
 
       .article-stats,
-      .scanner-actions {
+      .scanner-actions,
+      .amount-row {
         grid-template-columns: 1fr;
       }
     }
@@ -322,7 +414,7 @@
     <section id="scannerMessage" class="scanner-message" role="status" aria-live="polite" hidden></section>
 
     <section class="scanner-result" aria-live="polite">
-      <div id="scannerEmpty" class="scanner-empty">Letzter Artikel erscheint hier</div>
+      <div id="scannerEmpty" class="scanner-empty">Bereit für nächsten Scan</div>
 
       <article id="articleCard" class="article-card" hidden>
         <div>
@@ -348,19 +440,38 @@
             <strong id="articleBarcode"></strong>
           </div>
         </div>
-      </article>
-    </section>
 
-    <section class="scanner-actions" aria-label="Buchungsaktionen">
-      <button type="button" disabled>Abbruch</button>
-      <button type="button" disabled>Entnehmen</button>
-      <button type="button" disabled>Hinzufügen</button>
-      <button type="button" disabled>Korrektur</button>
-      <button type="button" disabled>Bestätigen</button>
+        <div class="scanner-workflow">
+          <div class="scanner-actions" aria-label="Buchungsaktionen">
+            <button class="scanner-action-button is-add" type="button" data-scanner-action="add">Hinzufügen</button>
+            <button class="scanner-action-button is-remove" type="button" data-scanner-action="remove">Entnehmen</button>
+            <button class="scanner-action-button is-correct" type="button" data-scanner-action="correct">Korrektur</button>
+            <button id="cancelActionButton" class="scanner-cancel-button" type="button">Abbruch</button>
+          </div>
+
+          <form id="amountForm" class="amount-form" autocomplete="off" hidden>
+            <label id="amountLabel" for="amountInput">Menge</label>
+            <div class="amount-row">
+              <input
+                id="amountInput"
+                class="amount-input"
+                name="amount"
+                type="number"
+                inputmode="numeric"
+                step="1"
+                min="1"
+                placeholder="Menge"
+              >
+              <button id="confirmActionButton" class="amount-confirm-button" type="submit">Bestätigen</button>
+            </div>
+          </form>
+        </div>
+      </article>
     </section>
   </main>
 
   <script>
+    const scannerTitle = document.getElementById("scannerTitle");
     const scannerForm = document.getElementById("scannerForm");
     const scannerInput = document.getElementById("scannerInput");
     const scannerMessage = document.getElementById("scannerMessage");
@@ -374,8 +485,27 @@
     const articleStatus = document.getElementById("articleStatus");
     const minimumStat = document.getElementById("minimumStat");
     const locationStat = document.getElementById("locationStat");
+    const actionButtons = Array.from(document.querySelectorAll("[data-scanner-action]"));
+    const cancelActionButton = document.getElementById("cancelActionButton");
+    const amountForm = document.getElementById("amountForm");
+    const amountInput = document.getElementById("amountInput");
+    const amountLabel = document.getElementById("amountLabel");
+    const confirmActionButton = document.getElementById("confirmActionButton");
+
+    const actionLabels = {
+      add: "Hinzufügen",
+      remove: "Entnehmen",
+      correct: "Korrektur"
+    };
+
+    let currentArticle = null;
+    let selectedAction = "";
+    let isSaving = false;
 
     function focusScannerInput() {
+      if (scannerInput.disabled) {
+        return;
+      }
       scannerInput.focus({ preventScroll: true });
     }
 
@@ -394,6 +524,33 @@
     function clearArticle() {
       articleCard.hidden = true;
       scannerEmpty.hidden = false;
+    }
+
+    function clearAmountForm() {
+      selectedAction = "";
+      amountForm.hidden = true;
+      amountInput.value = "";
+      amountInput.disabled = false;
+      confirmActionButton.disabled = false;
+      actionButtons.forEach((button) => {
+        button.classList.remove("is-selected");
+        button.disabled = false;
+      });
+      cancelActionButton.disabled = false;
+    }
+
+    function resetForNextScan(message, kind = "info") {
+      currentArticle = null;
+      isSaving = false;
+      scannerTitle.textContent = "Bereit zum Scan";
+      scannerInput.disabled = false;
+      scannerInput.value = "";
+      clearArticle();
+      clearAmountForm();
+      if (message) {
+        showMessage(message, kind);
+      }
+      window.setTimeout(focusScannerInput, 0);
     }
 
     function statusLabel(status) {
@@ -417,6 +574,8 @@
     }
 
     function showArticle(article) {
+      currentArticle = article;
+      clearAmountForm();
       articleName.textContent = article.name || "";
       articleStock.textContent = article.bestand;
       articleBarcode.textContent = article.barcode_id || "";
@@ -433,6 +592,8 @@
 
       scannerEmpty.hidden = true;
       articleCard.hidden = false;
+      scannerTitle.textContent = "Artikel erkannt";
+      scannerInput.disabled = true;
       showMessage("Artikel gefunden", "success");
     }
 
@@ -448,8 +609,68 @@
       return response.json();
     }
 
+    async function saveAction() {
+      const response = await fetch("{{ url_for('scanner_adjust') }}", {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          article_id: currentArticle.id,
+          action: selectedAction,
+          amount: amountInput.value
+        })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Aktion konnte nicht gespeichert werden.");
+      }
+      return result;
+    }
+
+    function selectAction(action) {
+      if (!currentArticle || isSaving) {
+        return;
+      }
+
+      selectedAction = action;
+      actionButtons.forEach((button) => {
+        button.classList.toggle("is-selected", button.dataset.scannerAction === action);
+      });
+
+      if (action === "correct") {
+        amountLabel.textContent = "Neuer Bestand";
+        amountInput.min = "0";
+        amountInput.placeholder = "Neuer Bestand";
+      } else {
+        amountLabel.textContent = "Menge";
+        amountInput.min = "1";
+        amountInput.placeholder = "Menge";
+      }
+
+      amountInput.value = "";
+      amountForm.hidden = false;
+      showMessage(`${actionLabels[action]} gewählt`, "info");
+      window.setTimeout(() => amountInput.focus({ preventScroll: true }), 0);
+    }
+
+    function setSavingState(isDisabled) {
+      isSaving = isDisabled;
+      actionButtons.forEach((button) => {
+        button.disabled = isDisabled;
+      });
+      cancelActionButton.disabled = isDisabled;
+      amountInput.disabled = isDisabled;
+      confirmActionButton.disabled = isDisabled;
+    }
+
     scannerForm.addEventListener("submit", async (event) => {
       event.preventDefault();
+      if (currentArticle) {
+        return;
+      }
+
       const rawCode = scannerInput.value;
       scannerInput.value = "";
 
@@ -466,22 +687,51 @@
         if (result.found) {
           showArticle(result.article);
         } else {
-          clearArticle();
-          showMessage("Artikel nicht gefunden", "error");
+          resetForNextScan("Artikel nicht gefunden", "error");
         }
       } catch (error) {
-        clearArticle();
-        showMessage("Artikel nicht gefunden", "error");
-      } finally {
-        focusScannerInput();
+        resetForNextScan("Artikel nicht gefunden", "error");
       }
     });
 
-    document.addEventListener("pointerdown", () => {
-      window.setTimeout(focusScannerInput, 0);
+    actionButtons.forEach((button) => {
+      button.addEventListener("click", () => selectAction(button.dataset.scannerAction));
+    });
+
+    cancelActionButton.addEventListener("click", () => {
+      resetForNextScan("Abgebrochen. Bereit für nächsten Scan.", "info");
+    });
+
+    amountForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!currentArticle || !selectedAction || isSaving) {
+        return;
+      }
+
+      setSavingState(true);
+      showMessage("Aktion wird gespeichert", "info");
+
+      try {
+        const result = await saveAction();
+        resetForNextScan(`${result.message} Bereit für nächsten Scan.`, "success");
+      } catch (error) {
+        setSavingState(false);
+        showMessage(error.message, "error");
+        window.setTimeout(() => amountInput.focus({ preventScroll: true }), 0);
+      }
+    });
+
+    document.addEventListener("pointerdown", (event) => {
+      if (!currentArticle && !event.target.closest("button, input, a")) {
+        window.setTimeout(focusScannerInput, 0);
+      }
     });
     window.addEventListener("load", focusScannerInput);
-    window.addEventListener("focus", focusScannerInput);
+    window.addEventListener("focus", () => {
+      if (!currentArticle) {
+        focusScannerInput();
+      }
+    });
   </script>
 </body>
 </html>

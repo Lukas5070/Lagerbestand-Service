@@ -329,6 +329,18 @@ def query_barcodes(filters: dict[str, str]) -> tuple[list[Artikel], str]:
     return artikel, active_label
 
 
+def scanner_article_payload(artikel: Artikel) -> dict[str, int | str]:
+    return {
+        "id": artikel.id,
+        "name": artikel.name,
+        "bestand": artikel.bestand,
+        "mindestbestand": artikel.mindestbestand,
+        "lagerplatz": artikel.lagerplatz or "",
+        "barcode_id": artikel.barcode_id,
+        "status": artikel.status,
+    }
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -536,15 +548,57 @@ def create_app() -> Flask:
         return jsonify(
             {
                 "found": True,
-                "article": {
-                    "id": artikel.id,
-                    "name": artikel.name,
-                    "bestand": artikel.bestand,
-                    "mindestbestand": artikel.mindestbestand,
-                    "lagerplatz": artikel.lagerplatz or "",
-                    "barcode_id": artikel.barcode_id,
-                    "status": artikel.status,
-                },
+                "article": scanner_article_payload(artikel),
+            }
+        )
+
+    @app.route("/scanner/adjust", methods=["POST"])
+    def scanner_adjust():
+        if not app.config["SCANNER_ENABLED"]:
+            return jsonify({"error": "Scanner ist deaktiviert."}), 404
+
+        payload = request.get_json(silent=True) or request.form
+        if not payload:
+            return jsonify({"error": "Ungültige Anfrage."}), 400
+
+        try:
+            article_id = int(payload.get("article_id") or "")
+        except (TypeError, ValueError):
+            return jsonify({"error": "Artikel fehlt."}), 400
+
+        action = (payload.get("action") or "").strip().lower()
+        try:
+            amount = int(str(payload.get("amount") or "").strip())
+        except (TypeError, ValueError):
+            return jsonify({"error": "Bitte eine ganze Zahl eingeben."}), 400
+
+        artikel = Artikel.query.get(article_id)
+        if not artikel:
+            return jsonify({"error": "Artikel nicht gefunden."}), 404
+
+        if action in {"add", "remove"}:
+            if amount <= 0:
+                return jsonify({"error": "Bitte eine Menge grösser als 0 eingeben."}), 400
+            if action == "add":
+                artikel.bestand += amount
+                message = "Artikel wurde hinzugefügt."
+            else:
+                artikel.bestand -= amount
+                message = "Artikel wurde entnommen."
+        elif action == "correct":
+            if amount < 0:
+                return jsonify({"error": "Der korrigierte Bestand darf nicht negativ sein."}), 400
+            artikel.bestand = amount
+            message = "Bestand wurde korrigiert."
+        else:
+            return jsonify({"error": "Unbekannte Aktion."}), 400
+
+        db.session.commit()
+        return jsonify(
+            {
+                "success": True,
+                "message": message,
+                "article": scanner_article_payload(artikel),
             }
         )
 
