@@ -169,7 +169,7 @@
       border-radius: 20px;
       background: var(--scanner-panel);
       display: grid;
-      align-content: start;
+      align-content: stretch;
       gap: 12px;
       overflow-y: auto;
     }
@@ -199,6 +199,7 @@
       align-items: start;
       gap: 12px;
       min-height: 0;
+      height: 100%;
     }
 
     .article-card > div:first-child {
@@ -400,46 +401,211 @@
 
     @media (max-width: 680px) {
       body {
-        overflow-y: auto;
+        overflow: hidden;
       }
 
       .scanner-shell {
-        min-height: 100dvh;
-        height: auto;
-        padding: 12px;
+        width: 100%;
+        height: 100dvh;
+        min-height: 0;
+        padding: 10px;
+        grid-template-rows: auto auto auto minmax(0, 1fr);
+        gap: 8px;
       }
 
       .scanner-topbar {
-        align-items: stretch;
-        flex-direction: column;
+        min-height: 18px;
+        align-items: center;
+        flex-direction: row;
+        font-size: 0.84rem;
+        line-height: 1;
       }
 
-      .scanner-ready,
+      .scanner-ready {
+        grid-template-columns: minmax(132px, 0.72fr) minmax(0, 1fr);
+        gap: 10px;
+        align-items: end;
+        padding: 10px;
+        border-radius: 18px;
+      }
+
+      .scanner-ready h1 {
+        font-size: clamp(2rem, 8vw, 2.65rem);
+        line-height: 0.96;
+      }
+
+      .scanner-form {
+        gap: 6px;
+      }
+
+      .scanner-form label {
+        font-size: 0.88rem;
+      }
+
+      .scanner-input {
+        min-height: 70px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        font-size: clamp(1.35rem, 5.8vw, 1.85rem);
+      }
+
+      .scanner-message {
+        min-height: 56px;
+        padding: 12px 14px;
+        border-radius: 18px;
+        font-size: clamp(1.12rem, 4.4vw, 1.45rem);
+      }
+
+      .scanner-result {
+        padding: 10px;
+        border-radius: 18px;
+        overflow: hidden;
+      }
+
+      .scanner-empty {
+        font-size: clamp(1.6rem, 6vw, 2.3rem);
+      }
+
       .article-card {
         grid-template-columns: 1fr;
-      }
-
-      .article-card {
         grid-template-areas:
           "heading"
           "stats"
           "workflow";
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        align-items: stretch;
+        gap: 10px;
       }
 
       .scanner-topbar a {
         width: 100%;
       }
 
+      .status-pill {
+        padding: 8px 12px;
+        font-size: 0.98rem;
+      }
+
+      .article-name {
+        margin-top: 7px;
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        font-size: clamp(2rem, 8vw, 2.9rem);
+        line-height: 1.02;
+      }
+
+      .article-stats {
+        min-height: 0;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: repeat(2, minmax(72px, 1fr));
+        gap: 10px;
+      }
+
+      .article-stat {
+        min-height: 0;
+        padding: 12px 14px;
+        border-radius: 18px;
+      }
+
       .article-stat.is-full {
-        grid-column: 1 / -1;
+        grid-column: auto;
+      }
+
+      .article-stat span,
+      .amount-form label {
+        font-size: 0.88rem;
+      }
+
+      .article-stat strong {
+        font-size: clamp(1.55rem, 6.2vw, 2.25rem);
+        line-height: 1.04;
+      }
+
+      #articleLocation {
+        font-size: clamp(1.28rem, 5.4vw, 2rem);
+      }
+
+      .scanner-workflow {
+        align-self: end;
+        gap: 10px;
+      }
+
+      .scanner-actions {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .scanner-actions button,
+      .amount-form button {
+        min-height: 76px;
+        border-radius: 18px;
+        font-size: clamp(1rem, 3.6vw, 1.22rem);
+        line-height: 1.08;
+      }
+
+      .amount-form {
+        gap: 8px;
+        padding: 12px;
+        border-radius: 18px;
       }
 
       .amount-row {
-        grid-template-columns: 58px minmax(0, 1fr) 58px;
+        grid-template-columns: 70px minmax(0, 1fr) 70px minmax(112px, 0.7fr);
+        gap: 8px;
+      }
+
+      .amount-input {
+        min-height: 76px;
+        padding: 12px;
+        border-radius: 18px;
+        font-size: clamp(1.55rem, 6vw, 2.2rem);
+      }
+
+      .amount-step-button {
+        font-size: clamp(2.3rem, 9vw, 3.25rem) !important;
       }
 
       .amount-confirm-button {
-        grid-column: 1 / -1;
+        grid-column: auto;
+      }
+    }
+
+    @media (max-width: 430px) {
+      .scanner-shell {
+        padding: 8px;
+        gap: 7px;
+      }
+
+      .scanner-ready {
+        grid-template-columns: minmax(110px, 0.62fr) minmax(0, 1fr);
+      }
+
+      .scanner-ready h1 {
+        font-size: clamp(1.65rem, 7.4vw, 2.25rem);
+      }
+
+      .scanner-input {
+        min-height: 62px;
+      }
+
+      .scanner-message {
+        min-height: 50px;
+      }
+
+      .article-name {
+        font-size: clamp(1.75rem, 7.4vw, 2.35rem);
+      }
+
+      .scanner-actions button,
+      .amount-form button,
+      .amount-input {
+        min-height: 66px;
+      }
+
+      .amount-row {
+        grid-template-columns: 62px minmax(0, 1fr) 62px minmax(96px, 0.66fr);
       }
     }
 
