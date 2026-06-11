@@ -130,6 +130,11 @@
       </table>
     </div>
   </section>
+
+  <button id="backToTopButton" class="back-to-top-button" type="button" aria-label="Nach oben" aria-hidden="true" tabindex="-1">
+    <span class="back-to-top-icon" aria-hidden="true">↑</span>
+    <span class="back-to-top-label">Nach oben</span>
+  </button>
 {% endblock %}
 
 {% block scripts %}
@@ -138,6 +143,7 @@
     const inventoryStatus = document.getElementById("inventoryStatus");
     const inventoryRows = Array.from(document.querySelectorAll(".inventory-row"));
     const inventoryCount = document.getElementById("inventoryCount");
+    const backToTopButton = document.getElementById("backToTopButton");
 
     function filterInventoryRows() {
       const query = (inventorySearch.value || "").trim().toLowerCase();
@@ -159,5 +165,19 @@
 
     inventorySearch.addEventListener("input", filterInventoryRows);
     inventoryStatus.addEventListener("change", filterInventoryRows);
+
+    function toggleBackToTopButton() {
+      const shouldShow = window.scrollY > 320;
+      backToTopButton.classList.toggle("is-visible", shouldShow);
+      backToTopButton.setAttribute("aria-hidden", shouldShow ? "false" : "true");
+      backToTopButton.tabIndex = shouldShow ? 0 : -1;
+    }
+
+    backToTopButton.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    window.addEventListener("scroll", toggleBackToTopButton, { passive: true });
+    toggleBackToTopButton();
   </script>
 {% endblock %}
